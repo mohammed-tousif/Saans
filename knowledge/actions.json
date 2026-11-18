@@ -1,0 +1,338 @@
+[
+  {
+    "id": "ACT001",
+    "title": "Reduce indoor pollution sources",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 5,
+    "approved_explanation": "Reduce or remove indoor pollution sources where feasible. Filtration supplements source control; ventilation helps when the incoming outdoor air is clean.",
+    "evidence_ids": [
+      "S12"
+    ],
+    "limitations": "Indoor conditions are not measured. Avoid blanket ventilation advice during outdoor pollution or indoor combustion.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT002",
+    "title": "Use suitable filtration if available",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "high_pollution",
+      "moderate_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [
+      "purifier"
+    ],
+    "budget_band": "moderate",
+    "time_required_minutes": 0,
+    "approved_explanation": "A suitable portable air cleaner can supplement source reduction in the room where it is used. Follow its operating and maintenance instructions.",
+    "evidence_ids": [
+      "S12"
+    ],
+    "limitations": "Filtration cannot remove all pollutants. Room conditions and equipment suitability remain unknown.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT003",
+    "title": "Review activity timing and location",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [
+      "no_flexible_time"
+    ],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 0,
+    "approved_explanation": "Where your routine allows, consider adapting the timing or location of physical activity to reduce pollution exposure.",
+    "evidence_ids": [
+      "S11"
+    ],
+    "limitations": "No hourly forecast is supplied here: no cleaner hour or safe exercise period can be identified. Follow individual clinical advice where relevant.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT004",
+    "title": "Consider available public transport",
+    "purpose": "emissions",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [
+      "no_public_transit",
+      "mobility_limitation"
+    ],
+    "required_resources": [
+      "public_transit"
+    ],
+    "budget_band": "low",
+    "time_required_minutes": 15,
+    "approved_explanation": "Public transport is an alternative to driving when practical. Consider access, travel time and the actual route before switching.",
+    "evidence_ids": [
+      "S19"
+    ],
+    "limitations": "This does not establish lower personal exposure or a specific emissions saving.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT005",
+    "title": "Wet-mop floors instead of dry sweeping",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 20,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S12"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT006",
+    "title": "Avoid burning incense, candles, or mosquito coils indoors",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 0,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S12",
+      "S13"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT007",
+    "title": "Combine planned errands",
+    "purpose": "emissions",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 10,
+    "approved_explanation": "Where practical, combine errands to avoid unnecessary driving and backtracking.",
+    "evidence_ids": [
+      "S19"
+    ],
+    "limitations": "The benefit depends on the trips actually avoided. No numerical emissions saving has been calculated.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT008",
+    "title": "Keep windows closed during peak traffic hours",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "high_pollution",
+      "moderate_pollution"
+    ],
+    "contraindications": [
+      "indoor_combustion_active",
+      "no_ventilation_alternative"
+    ],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 0,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S13",
+      "S12"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT009",
+    "title": "Respirator guidance — pending review",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "high_pollution"
+    ],
+    "contraindications": [
+      "mobility_limitation"
+    ],
+    "required_resources": [],
+    "budget_band": "low",
+    "time_required_minutes": 0,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S11"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT010",
+    "title": "Avoid unnecessary parked idling",
+    "purpose": "emissions",
+    "eligible_conditions": [
+      "any_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [
+      "car"
+    ],
+    "budget_band": "zero",
+    "time_required_minutes": 0,
+    "approved_explanation": "When safely parked and appropriate for your vehicle, avoid unnecessary engine idling.",
+    "evidence_ids": [
+      "S19"
+    ],
+    "limitations": "Follow vehicle instructions and safety needs. This is not an instruction to turn the engine off in moving traffic.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  },
+  {
+    "id": "ACT011",
+    "title": "Create a clean air room at home",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "high_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 15,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S13",
+      "S14"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT012",
+    "title": "DIY box fan filter for indoor air",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "high_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [
+      "box_fan",
+      "furnace_filter"
+    ],
+    "budget_band": "low",
+    "time_required_minutes": 15,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S14"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT013",
+    "title": "Walk or cycle for short trips",
+    "purpose": "emissions",
+    "eligible_conditions": [
+      "low_pollution",
+      "moderate_pollution"
+    ],
+    "contraindications": [
+      "mobility_limitation",
+      "high_pollution"
+    ],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 10,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S11",
+      "S15"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT014",
+    "title": "Ventilate home briefly during cleaner periods",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "moderate_pollution",
+      "low_pollution"
+    ],
+    "contraindications": [],
+    "required_resources": [
+      "cross_ventilation"
+    ],
+    "budget_band": "zero",
+    "time_required_minutes": 15,
+    "approved_explanation": "Not available: this action is awaiting claim-level evidence review.",
+    "evidence_ids": [
+      "S12",
+      "S13"
+    ],
+    "limitations": "Disabled; do not recommend until sources and applicability are verified.",
+    "reviewed_at": "2026-11-18",
+    "version": 1,
+    "enabled": false
+  },
+  {
+    "id": "ACT015",
+    "title": "Adapt flexible family activity",
+    "purpose": "exposure",
+    "eligible_conditions": [
+      "moderate_pollution",
+      "high_pollution"
+    ],
+    "contraindications": [
+      "no_flexible_time"
+    ],
+    "required_resources": [],
+    "budget_band": "zero",
+    "time_required_minutes": 0,
+    "approved_explanation": "Consider the timing and location of family activity alongside local conditions and individual needs. Preserve fixed commitments.",
+    "evidence_ids": [
+      "S11"
+    ],
+    "limitations": "This app does not identify a safe outdoor period or replace individual medical advice.",
+    "reviewed_at": "2026-11-18",
+    "version": 2,
+    "enabled": true
+  }
+]

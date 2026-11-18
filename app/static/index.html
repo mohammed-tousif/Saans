@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Saans — Your family's cleaner-air day. Get practical, evidence-backed daily plans tailored to your city, household, and budget.">
+    <title>Saans — Your family's cleaner-air day</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header" role="banner">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon" aria-hidden="true">🌿</span>
+                    <span class="logo-text">Saans</span>
+                </h1>
+                <p class="tagline">Your family's cleaner-air day</p>
+            </div>
+            <div class="header-status" id="header-status" aria-live="polite"></div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="tab-nav" role="tablist" aria-label="Main navigation">
+            <button class="tab active" role="tab" aria-selected="true" data-tab="setup" id="tab-setup">
+                <span class="tab-icon" aria-hidden="true">🏠</span>
+                <span class="tab-label">Setup</span>
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="today" id="tab-today">
+                <span class="tab-icon" aria-hidden="true">📋</span>
+                <span class="tab-label">Today</span>
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="home" id="tab-home">
+                <span class="tab-icon" aria-hidden="true">🏡</span>
+                <span class="tab-label">My Home</span>
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="sources" id="tab-sources">
+                <span class="tab-icon" aria-hidden="true">📊</span>
+                <span class="tab-label">Sources</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content" role="main">
+
+            <!-- SETUP VIEW -->
+            <section class="view active" id="view-setup" role="tabpanel" aria-labelledby="tab-setup">
+                <div class="view-header">
+                    <h2>Set up your household</h2>
+                    <p>Tell us about your city and daily routine. We'll create a practical plan for today.</p>
+                </div>
+
+                <!-- Sample Profile Banner -->
+                <div class="sample-banner" id="sample-banner">
+                    <div class="sample-banner-content">
+                        <strong>Quick demo?</strong> Load a sample household profile to see how Saans works.
+                    </div>
+                    <div class="sample-banner-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('parent')" id="btn-sample-parent">
+                            👨‍👧 School-run parent
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('worker')" id="btn-sample-worker">
+                            👷 Outdoor worker
+                        </button>
+                    </div>
+                    <p class="sample-note">⚠ Sample profile data — not real people. Environmental data remains live.</p>
+                </div>
+
+                <form id="setup-form" class="setup-form" novalidate>
+                    <!-- City Selection -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Your City</legend>
+                        <div class="select-wrapper">
+                            <select id="city-select" name="city" required aria-label="Select your city">
+                                <option value="">Choose a city...</option>
+                            </select>
+                        </div>
+                    </fieldset>
+
+                    <!-- Routine Blocks -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Fixed Commitments</legend>
+                        <p class="form-help">Add time blocks that cannot move (school, work, etc.)</p>
+                        <div id="routine-blocks" class="routine-blocks"></div>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="addRoutineBlock()" id="btn-add-routine">
+                            + Add commitment
+                        </button>
+                    </fieldset>
+
+                    <!-- Transport -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Available Transport</legend>
+                        <div class="checkbox-grid" role="group" aria-label="Transport options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="walk" checked> Walking
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="public_transit" checked> Public transit
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="cycle"> Cycling
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="auto_rickshaw"> Auto-rickshaw
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="car"> Car
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="transport" value="motorcycle"> Motorcycle
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Budget -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Monthly Air-Quality Budget</legend>
+                        <div class="radio-group" role="radiogroup" aria-label="Budget band">
+                            <label class="radio-label">
+                                <input type="radio" name="budget" value="zero" checked> No extra spend
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="budget" value="low"> Under ₹500
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="budget" value="moderate"> ₹500–2,000
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="budget" value="flexible"> Above ₹2,000
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- Home Resources -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Home Resources</legend>
+                        <div class="checkbox-grid" role="group" aria-label="Home resources">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_purifier" id="has-purifier"> Air purifier
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_exhaust_fan" id="has-exhaust-fan" checked> Exhaust fan
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_cross_ventilation" id="has-cross-ventilation" checked> Cross ventilation
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label for="cooking-fuel" class="form-label">Cooking fuel</label>
+                            <select id="cooking-fuel" name="cooking_fuel" class="select-sm">
+                                <option value="lpg">LPG</option>
+                                <option value="electric">Electric</option>
+                                <option value="biomass">Biomass/wood</option>
+                                <option value="none">No cooking</option>
+                            </select>
+                        </div>
+                    </fieldset>
+
+                    <!-- Household Members -->
+                    <fieldset class="form-group">
+                        <legend class="form-legend">Household Needs</legend>
+                        <div class="checkbox-grid" role="group" aria-label="Household needs">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_children" id="has-children"> Children at home
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_elderly" id="has-elderly"> Elderly members
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_respiratory" id="has-respiratory"> Respiratory concerns
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label for="flexibility" class="form-label">Schedule flexibility (minutes)</label>
+                            <input type="range" id="flexibility" name="flexibility" min="0" max="120" value="30" step="15"
+                                   aria-label="Schedule flexibility in minutes">
+                            <output for="flexibility" id="flexibility-value" class="range-value">30 min</output>
+                        </div>
+                    </fieldset>
+
+                    <!-- Submit -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-lg" id="btn-create-plan">
+                            <span class="btn-text">Create my plan</span>
+                            <span class="btn-loading" aria-hidden="true" style="display:none;">
+                                <span class="spinner"></span> Generating...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- TODAY VIEW -->
+            <section class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today" hidden>
+                <!-- Air Quality Context -->
+                <div class="air-context-card" id="air-context">
+                    <div class="air-loading" id="air-loading">
+                        <span class="spinner"></span>
+                        <span>Loading environmental data...</span>
+                    </div>
+                </div>
+
+                <!-- Plan Content -->
+                <div id="plan-content" style="display:none;">
+                    <!-- Context Summary -->
+                    <div class="context-summary" id="plan-summary"></div>
+
+                    <!-- Generation Mode Badge -->
+                    <div class="mode-badge" id="mode-badge"></div>
+
+                    <!-- Actions -->
+                    <h2 class="section-title">Your actions for today</h2>
+                    <div class="actions-list" id="actions-list"></div>
+
+                    <!-- Timeline -->
+                    <h2 class="section-title">Daily timeline</h2>
+                    <div class="timeline" id="timeline"></div>
+
+                    <!-- Warnings -->
+                    <div class="warnings" id="warnings" style="display:none;"></div>
+
+                    <!-- Change My Day -->
+                    <div class="change-my-day" id="change-my-day">
+                        <h2 class="section-title">Change my day</h2>
+                        <p class="section-desc">What if something changes? Edit a constraint and get a revised plan.</p>
+                        <div class="constraint-buttons" id="constraint-buttons"></div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="today-empty">
+                    <div class="empty-icon" aria-hidden="true">📋</div>
+                    <h3>No plan yet</h3>
+                    <p>Set up your household to create your first plan.</p>
+                    <button class="btn btn-primary" onclick="switchTab('setup')">Set up household</button>
+                </div>
+            </section>
+
+            <!-- MY HOME VIEW -->
+            <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home" hidden>
+                <div class="view-header">
+                    <h2>My Home</h2>
+                    <p>Indoor air guidance based on your home resources.</p>
+                </div>
+
+                <div class="home-notice" id="home-notice">
+                    <span class="notice-icon" aria-hidden="true">ℹ</span>
+                    <span>Indoor conditions are not measured without a sensor. These are general recommendations based on your home setup.</span>
+                </div>
+
+                <div id="home-actions" class="actions-list">
+                    <div class="empty-state">
+                        <p>Create a plan first to see home-specific recommendations.</p>
+                        <button class="btn btn-primary" onclick="switchTab('setup')">Set up household</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SOURCES VIEW -->
+            <section class="view" id="view-sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
+                <div class="view-header">
+                    <h2>Sources & Data</h2>
+                    <p>Where our information comes from and what it means.</p>
+                </div>
+
+                <div id="env-provenance" class="provenance-card" style="display:none;"></div>
+
+                <h3 class="subsection-title">Evidence Sources</h3>
+                <div id="sources-list" class="sources-list">
+                    <div class="empty-state">
+                        <span class="spinner"></span> Loading sources...
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Compare Modal -->
+        <dialog id="compare-modal" class="compare-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Plan Comparison</h2>
+                    <button class="btn-close" onclick="document.getElementById('compare-modal').close()" aria-label="Close comparison">✕</button>
+                </div>
+                <div class="modal-body" id="compare-body"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="document.getElementById('compare-modal').close()">Close</button>
+                    <button class="btn btn-primary" id="btn-accept-revised" onclick="acceptRevisedPlan()">Use revised plan</button>
+                </div>
+            </div>
+        </dialog>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

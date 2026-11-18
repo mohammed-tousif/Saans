@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment secrets
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts
+*.log
+htmlcov/
+.coverage
+.pytest_cache/
+.mypy_cache/
+
+# Large assets (keep repo under 10MB)
+*.mp4
+*.mov
+*.avi
+*.zip
+*.tar.gz
+node_modules/

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "S01",
+    "title": "PromptWars Virtual Page",
+    "url": "https://promptwars.in/promptwarsVirtual.html",
+    "organization": "PromptWars",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Programme rules, submission format, challenge structure",
+    "confidence": "primary_verified",
+    "limitations": "Dynamic brief not fully extracted; dashboard may differ"
+  },
+  {
+    "id": "S05",
+    "title": "CPCB National Air Quality Index Report",
+    "url": "https://www.airquality.cpcb.gov.in/ccr_docs/FINAL-REPORT_AQI_.pdf",
+    "organization": "Central Pollution Control Board, India",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Indian AQI methodology: six categories, pollutant requirements, breakpoints",
+    "confidence": "primary_search_excerpt",
+    "limitations": "Full method extraction and implementation verification pending"
+  },
+  {
+    "id": "S07",
+    "title": "Open-Meteo Air Quality API Documentation",
+    "url": "https://open-meteo.com/en/docs/air-quality-api",
+    "organization": "Open-Meteo",
+    "checked_date": "2026-11-18",
+    "supported_claim": "CAMS Global atmospheric composition forecasts at approximately 45 km; European regional product approximately 11 km.",
+    "confidence": "primary_verified",
+    "limitations": "Model output, not station observations; non-commercial use terms"
+  },
+  {
+    "id": "S08",
+    "title": "Open-Meteo Terms of Service",
+    "url": "https://open-meteo.com/en/terms",
+    "organization": "Open-Meteo",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Non-commercial endpoint restrictions and usage quotas",
+    "confidence": "primary_verified",
+    "limitations": "Competition project qualification for non-commercial use needs assessment"
+  },
+  {
+    "id": "S11",
+    "title": "WHO Personal Interventions Q&A",
+    "url": "https://www.who.int/news-room/questions-and-answers/item/air-pollution-personal-interventions-and-risk-communication",
+    "organization": "World Health Organization",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Adapting activity timing and location; heightened caution for susceptible populations",
+    "confidence": "primary_verified",
+    "limitations": "General guidance, not India-specific; not substitute for local health advice"
+  },
+  {
+    "id": "S12",
+    "title": "EPA Air Cleaners and Filters in the Home",
+    "url": "https://www.epa.gov/indoor-air-quality-iaq/air-cleaners-and-air-filters-home",
+    "organization": "US Environmental Protection Agency",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Source reduction priority; ventilation with clean air; filtration as supplement, not complete solution",
+    "confidence": "primary_verified",
+    "limitations": "US context; not all recommendations transfer directly to Indian housing types"
+  },
+  {
+    "id": "S13",
+    "title": "EPA Emergencies and Indoor Air Quality",
+    "url": "https://www.epa.gov/emergencies-iaq/emergencies-and-indoor-air-quality-iaq",
+    "organization": "US Environmental Protection Agency",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Ventilation tradeoffs with indoor pollutants and temperature",
+    "confidence": "primary_verified",
+    "limitations": "Emergency/wildfire context; not complete India winter-smog protocol"
+  },
+  {
+    "id": "S14",
+    "title": "EPA Indoor Air Filtration (Wildfires)",
+    "url": "https://www.epa.gov/wildfires/indoor-air-filtration",
+    "organization": "US Environmental Protection Agency",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Filtration guidance, ozone generator caution, DIY box fan filter",
+    "confidence": "primary_verified",
+    "limitations": "Wildfire context; ozone caution applies broadly"
+  },
+  {
+    "id": "S15",
+    "title": "UK 2026 GHG Conversion Factors",
+    "url": "https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026",
+    "organization": "UK Government (DESNZ)",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Methodology reference for transport emission factors",
+    "confidence": "primary_verified",
+    "limitations": "UK factors, not validated Indian defaults; methodology reference only"
+  },
+  {
+    "id": "S19",
+    "title": "Reducing pollution from vehicles and engines",
+    "url": "https://www.epa.gov/transportation-air-pollution-and-climate-change/what-you-can-do-reduce-pollution-vehicles-and",
+    "organization": "US EPA",
+    "checked_date": "2026-11-18",
+    "supported_claim": "Driving less, combining trips, considering public transit and avoiding unnecessary idling.",
+    "confidence": "primary_verified",
+    "limitations": "General transport guidance; no Indian numerical emissions factors or personal exposure estimates."
+  }
+]

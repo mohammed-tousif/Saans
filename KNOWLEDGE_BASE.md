@@ -1,6 +1,6 @@
 # PromptWars 06 — project knowledge base
 
-Research date: 18 November 2026, Asia/Kolkata. Status: researched project blueprint; no application has been implemented, deployed, or submitted.
+Research baseline: 18 November 2026, Asia/Kolkata. Status updated 24 November: a local application is implemented; see HANDOFF.md and docs/verification.md for current checks and limitations. Deployment and submission remain unverified.
 
 ## Recommendation
 
@@ -50,3 +50,7 @@ Complete a one-day feasibility spike: obtain one real provider response, verify 
 ## Maintenance
 
 Keep verified facts in document 01 and sources in document 08. Record design changes with date and reason. Treat all dates, pricing, quotas, model availability, and event rules as refreshable. This knowledge base is saved in the project workspace; it is not a claim of permanent assistant memory.
+
+## Implementation correction register
+
+Read [Grounding and corrections](knowledge-base/09-grounding-and-corrections.md) before resuming implementation. The current build uses constrained AI selection and curated explanations; this supersedes unrestricted plan-generation suggestions in the original blueprint.

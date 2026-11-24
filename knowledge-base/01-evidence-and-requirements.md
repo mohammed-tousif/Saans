@@ -48,3 +48,8 @@ Record the exact challenge title/brief, deadline with timezone, mandatory fields
 ## What this research does not establish
 
 It does not establish the user’s current rank, reward balance, registration status, API quota, available cloud credits, or submission status. Personalized claims in the Muse guide are not account verification. No paid service, registration, deployment, or public post has been performed.
+
+
+## Official dashboard verification — 24 November 2026
+
+Signed-in Challenge 6 form now confirms deadline 29 November 2026 at 23:59 IST, three attempts, public GitHub under 10 MB, deployed app, video, changes, GenAI usage and LinkedIn fields. Dashboard permits any AI tool for build/deploy while requiring GenAI. This supersedes earlier inferred/unconfirmed requirements. See docs/submission-kit.md for exact source and details. No submission performed.

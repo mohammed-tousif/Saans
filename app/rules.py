@@ -221,7 +221,6 @@ def check_fixed_constraints_preserved(
         # Check if any action tries to move or override a fixed block
         for action in plan_actions:
             affected = action.get("affected_routine", "")
-            time_window = action.get("time_window", "")
             if block.label.lower() in affected.lower():
                 # An action references a fixed routine — check it doesn't suggest moving it
                 if "move" in action.get("reason", "").lower() or "reschedule" in action.get("reason", "").lower():

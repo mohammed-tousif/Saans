@@ -7,3 +7,6 @@
 - Resume unfinished work; do not restart or re-scaffold the project. Preserve existing research and user changes.
 - Codex and Antigravity follow the same handoff protocol. Record who actually performed work; never attribute Codex changes to Antigravity.
 - Read `KNOWLEDGE_BASE.md` and relevant research documents. Antigravity also reads `ANTIGRAVITY_MASTER_PROMPT.md`.
+
+- Read `knowledge-base/09-grounding-and-corrections.md`; never restore corrected assumptions without new evidence and tests.
+- Quota percentages may not be visible. Update handoff after each meaningful change and before lengthy checks; user-reported percentages are estimates.

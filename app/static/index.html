@@ -67,7 +67,7 @@
                             👷 Outdoor worker
                         </button>
                     </div>
-                    <p class="sample-note">⚠ Sample profile data — not real people. Environmental data remains live.</p>
+                    <p class="sample-note" id="sample-note">⚠ Sample profile data — not real people.</p>
                 </div>
 
                 <form id="setup-form" class="setup-form" novalidate>
@@ -173,6 +173,9 @@
                             <label class="checkbox-label">
                                 <input type="checkbox" name="has_respiratory" id="has-respiratory"> Respiratory concerns
                             </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_mobility" id="has-mobility"> Mobility limitation
+                            </label>
                         </div>
                         <div class="form-row">
                             <label for="flexibility" class="form-label">Schedule flexibility (minutes)</label>
@@ -190,6 +193,16 @@
                                 <span class="spinner"></span> Generating...
                             </span>
                         </button>
+                        <p class="data-sharing-notice">
+                            When you submit, your household inputs, including routine details, are sent to our server.
+                            The application keeps temporary plan snapshots in server memory for comparisons.
+                            When AI ranking is available, Google's Gemini API receives your city, budget, resources,
+                            household needs (including respiratory and mobility concerns), transport options, flexibility,
+                            routine count, an environmental summary, and eligible action details. Routine names, times,
+                            and additional notes are excluded from the Gemini request. Google's processing is governed
+                            by its API terms. No account or login is required.
+                            <a href="#" onclick="switchTab('sources'); return false;">Learn about our data sources.</a>
+                        </p>
                     </div>
                 </form>
             </section>
@@ -197,12 +210,11 @@
             <!-- TODAY VIEW -->
             <section class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today" hidden>
                 <!-- Air Quality Context -->
-                <div class="air-context-card" id="air-context">
-                    <div class="air-loading" id="air-loading">
+                    <div class="air-loading" id="air-loading" style="display:none;" role="status">
                         <span class="spinner"></span>
                         <span>Loading environmental data...</span>
                     </div>
-                </div>
+                <div class="air-context-card" id="air-context"></div>
 
                 <!-- Plan Content -->
                 <div id="plan-content" style="display:none;">

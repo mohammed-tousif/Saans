@@ -18,7 +18,7 @@ This prompt authorizes local development and verification. It does not authorize
 
 ## 2. Read the existing knowledge base
 
-Read `KNOWLEDGE_BASE.md`, then all eight documents in `knowledge-base/`. Use them as the evidence and acceptance baseline. This master prompt supersedes the older short `07-antigravity-brief.md` for execution and handoff workflow. Verified current official requirements supersede earlier assumptions. Log material changes and their evidence.
+Read `KNOWLEDGE_BASE.md`, then all documents in `knowledge-base/`, especially `09-grounding-and-corrections.md`. Use them as the evidence and acceptance baseline. This master prompt supersedes the older short `07-antigravity-brief.md` for execution and handoff workflow. Verified current official requirements supersede earlier assumptions. Log material changes and their evidence.
 
 Do not spend the entire session rereading or rewriting research. Begin implementation after understanding the core constraints. Recheck current official documentation only where the implementation depends on it. Never treat the inferred deadline, older challenge form limits, or our internal quality weights as confirmed competition rules.
 

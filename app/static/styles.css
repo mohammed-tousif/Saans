@@ -522,6 +522,22 @@ input[type="range"] {
   padding: var(--space-md) 0;
 }
 
+.data-sharing-notice {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-sm);
+  line-height: 1.5;
+}
+
+.data-sharing-notice a {
+  color: var(--color-text-link);
+  text-decoration: none;
+}
+
+.data-sharing-notice a:hover {
+  text-decoration: underline;
+}
+
 /* Spinner */
 .spinner {
   display: inline-block;

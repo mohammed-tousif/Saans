@@ -1,284 +1,171 @@
-"""Saans — FastAPI application entry point.
-
-Serves the API endpoints and the same-origin frontend.
-"""
-
+"""Single-process local Saans API with bounded planning and private snapshots."""
 from __future__ import annotations
 
-import logging
+import time
+import uuid
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.cities import get_city, list_cities
 from app.config import settings
-from app.planner import generate_plan
+from app.security import RequestGuards
+from app.planner import generate_plan, profile_fingerprint
 from app.providers import ProviderError, get_provider
 from app.rules import load_sources
-from app.schemas import (
-    AirQualityRequest,
-    CompareRequest,
-    CompareResponse,
-    HealthStatus,
-    HouseholdProfile,
-    PlanRequest,
-    PlanResponse,
-)
+from app.schemas import (CompareRequest, CompareResponse, DataSourceKind,
+                         EnvironmentalContext, HealthStatus, HouseholdProfile, PlanRequest)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-logger = logging.getLogger(__name__)
-
+app = FastAPI(title="Saans", version="0.1.0")
+app.add_middleware(RequestGuards)
 STATIC_DIR = Path(__file__).parent / "static"
+# Process-local, bounded, expiring snapshots; opaque IDs act as temporary capabilities.
+_snapshots = OrderedDict()
+_request_times = deque()
+_active = 0
+
+
+def remember(profile, plan):
+    prune_snapshots()
+    plan.plan_id = uuid.uuid4().hex
+    _snapshots[plan.plan_id] = (time.monotonic(), profile.model_copy(deep=True), plan.model_copy(deep=True))
+    while len(_snapshots) > 100:
+        _snapshots.popitem(last=False)
+    return plan
+
+
+def prune_snapshots():
+    for key, (created, _, _) in list(_snapshots.items()):
+        if time.monotonic() - created > 1800:
+            del _snapshots[key]
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application startup and shutdown."""
-    logger.info("Saans starting — data_mode=%s, gemini_available=%s",
-                settings.data_mode, settings.gemini_available)
-    if not settings.gemini_available:
-        logger.warning("GEMINI_API_KEY not configured. AI planning will use fallback mode.")
-    yield
-    logger.info("Saans shutting down")
+async def planning_slot():
+    global _active
+    now = time.monotonic()
+    while _request_times and now - _request_times[0] >= 60:
+        _request_times.popleft()
+    if (_active >= settings.max_concurrent_gemini_calls or
+            len(_request_times) >= settings.max_plan_requests_per_minute):
+        raise HTTPException(429, "Planning is busy. Please try again shortly.")
+    _request_times.append(now)
+    _active += 1
+    try:
+        yield
+    finally:
+        _active -= 1
 
 
-app = FastAPI(
-    title="Saans",
-    description="Your family's cleaner-air day — urban air quality assistant",
-    version="0.1.0",
-    lifespan=lifespan,
-)
-
-# CORS for development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Track in-flight requests to prevent duplicate expensive calls
-_plan_in_flight: dict[str, bool] = {}
+async def environment(city):
+    info = get_city(city)
+    if not info:
+        raise HTTPException(400, "Unsupported city")
+    try:
+        return await get_provider(settings.data_mode, settings.open_meteo_timeout_seconds).fetch(
+            info["latitude"], info["longitude"], info["label"],
+        )
+    except ProviderError:
+        return EnvironmentalContext(
+            provider="Unavailable", source_url="", source_kind=DataSourceKind.UNAVAILABLE,
+            location_label=info["label"], latitude=info["latitude"], longitude=info["longitude"],
+            retrieved_at=datetime.now(timezone.utc), is_stale=True,
+            quality_flags=["provider_unavailable"], attribution="Environmental data unavailable",
+        )
 
 
-# --- Health check ---
+def apply_changes(profile, changes):
+    data = profile.model_dump(mode="json")
+    for change in changes:
+        if change in ("purifier_on", "purifier_off"):
+            data["has_purifier"] = change == "purifier_on"
+        elif change in ("budget_zero", "budget_low"):
+            data["budget_band"] = change.removeprefix("budget_")
+        elif change in ("transit_on", "transit_off"):
+            transport = [t for t in data["available_transport"] if t != "public_transit"]
+            if change == "transit_on":
+                transport.append("public_transit")
+            data["available_transport"] = transport
+        elif change == "more_flexibility":
+            data["flexibility_minutes"] = min(240, data["flexibility_minutes"] + 30)
+        elif change != "keep_schedule":
+            raise ValueError("Unsupported constraint change")
+    return HouseholdProfile.model_validate(data)
+
 
 @app.get("/health")
-async def health() -> HealthStatus:
-    """Readiness check without secrets or personal context."""
-    return HealthStatus(
-        status="ok",
-        data_mode=settings.data_mode,
-        gemini_available=settings.gemini_available,
-        version="0.1.0",
-    )
+async def health():
+    return HealthStatus(data_mode=settings.data_mode, gemini_available=settings.gemini_available)
 
-
-# --- City endpoints ---
 
 @app.get("/api/cities")
-async def get_cities():
-    """List supported cities."""
+async def cities():
     return list_cities()
 
 
-# --- Air quality endpoint ---
-
 @app.get("/api/air")
-async def get_air_quality(city: str):
-    """Fetch current air quality for a city."""
-    city_info = get_city(city)
-    if not city_info:
-        raise HTTPException(status_code=400, detail=f"Unsupported city: {city}")
+async def air(city: str):
+    return await environment(city)
 
-    provider = get_provider(
-        mode=settings.data_mode,
-        timeout=settings.open_meteo_timeout_seconds,
-    )
-
-    try:
-        context = await provider.fetch(
-            latitude=city_info["latitude"],
-            longitude=city_info["longitude"],
-            label=city_info["label"],
-        )
-        return context.model_dump(mode="json")
-    except ProviderError as e:
-        logger.error("Provider error for %s: %s", city, e)
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": str(e),
-                "city": city,
-                "provider_status": "unavailable",
-                "suggestion": "Environmental data is temporarily unavailable. The plan will use general guidance.",
-            },
-        )
-
-
-# --- Plan generation endpoint ---
 
 @app.post("/api/plan")
-async def create_plan(request: PlanRequest) -> PlanResponse:
-    """Generate a daily plan for a household."""
-    profile = request.profile
+async def plan(request: PlanRequest):
+    if request.constraint_changes:
+        raise HTTPException(422, "Use typed changes through /api/compare")
+    async with planning_slot():
+        context = await environment(request.profile.city)
+        result = await generate_plan(request.profile, context)
+        return remember(request.profile, result)
 
-    # Prevent duplicate in-flight requests
-    request_key = f"{profile.city}:{hash(str(profile.model_dump()))}"
-    if _plan_in_flight.get(request_key):
-        raise HTTPException(
-            status_code=429,
-            detail="A plan request is already being generated. Please wait.",
-        )
-
-    _plan_in_flight[request_key] = True
-    try:
-        # Fetch environmental data
-        city_info = get_city(profile.city)
-        if not city_info:
-            raise HTTPException(status_code=400, detail=f"Unsupported city: {profile.city}")
-
-        provider = get_provider(
-            mode=settings.data_mode,
-            timeout=settings.open_meteo_timeout_seconds,
-        )
-
-        try:
-            context = await provider.fetch(
-                latitude=city_info["latitude"],
-                longitude=city_info["longitude"],
-                label=city_info["label"],
-            )
-        except ProviderError as e:
-            logger.error("Provider error during plan: %s", e)
-            # Create a minimal context for fallback
-            from datetime import datetime, timezone as tz
-            from app.schemas import DataSourceKind, EnvironmentalContext
-            context = EnvironmentalContext(
-                provider="Unavailable",
-                source_url="",
-                source_kind=DataSourceKind.MODEL,
-                location_label=city_info["label"],
-                latitude=city_info["latitude"],
-                longitude=city_info["longitude"],
-                retrieved_at=datetime.now(tz.utc),
-                quality_flags=["provider_unavailable"],
-                is_stale=True,
-                attribution="Environmental data unavailable",
-            )
-
-        # Generate plan
-        plan = await generate_plan(
-            profile=profile,
-            context=context,
-            constraint_changes=request.constraint_changes,
-        )
-
-        # Validate fingerprint against stale responses
-        if request.previous_plan_fingerprint and plan.input_fingerprint == request.previous_plan_fingerprint:
-            plan.warnings.append("Plan context unchanged from previous request.")
-
-        return plan
-
-    finally:
-        _plan_in_flight.pop(request_key, None)
-
-
-# --- Compare/replan endpoint ---
 
 @app.post("/api/compare")
-async def compare_plans(request: CompareRequest) -> CompareResponse:
-    """Compare baseline and revised plans after constraint changes."""
-    profile = request.profile
-
-    # Generate original plan (or use provided baseline)
-    city_info = get_city(profile.city)
-    if not city_info:
-        raise HTTPException(status_code=400, detail=f"Unsupported city: {profile.city}")
-
-    provider = get_provider(mode=settings.data_mode, timeout=settings.open_meteo_timeout_seconds)
-    try:
-        context = await provider.fetch(
-            latitude=city_info["latitude"],
-            longitude=city_info["longitude"],
-            label=city_info["label"],
-        )
-    except ProviderError:
-        raise HTTPException(status_code=503, detail="Environmental data unavailable for comparison")
-
-    # Generate original plan
-    original_plan = await generate_plan(profile=profile, context=context)
-
-    # Generate revised plan with changed constraints
-    revised_plan = await generate_plan(
-        profile=profile,
-        context=context,
-        constraint_changes=request.changed_constraints,
-    )
-
-    # Identify changes
-    original_ids = {a.action_id for a in original_plan.actions}
-    revised_ids = {a.action_id for a in revised_plan.actions}
-
-    changes = []
-    added = revised_ids - original_ids
-    removed = original_ids - revised_ids
-    if added:
-        changes.append(f"Added actions: {', '.join(added)}")
-    if removed:
-        changes.append(f"Removed actions: {', '.join(removed)}")
-    if not added and not removed:
-        changes.append("Same actions selected, but recommendations may differ in timing or emphasis.")
-
-    preserved = []
-    for block in profile.routine_blocks:
-        if block.is_fixed:
-            preserved.append(f"{block.label} ({block.start_time}–{block.end_time})")
-
+async def compare(request: CompareRequest):
+    prune_snapshots()
+    snapshot = _snapshots.get(request.baseline_plan_id)
+    if not snapshot:
+        raise HTTPException(409, "The previous plan expired. Create a new plan first.")
+    _, original_profile, original = snapshot
+    if profile_fingerprint(request.profile) != profile_fingerprint(original_profile):
+        raise HTTPException(409, "Profile changed. Create a new plan first.")
+    revised_profile = apply_changes(original_profile, request.changed_constraints)
+    async with planning_slot():
+        context = await environment(revised_profile.city)
+        revised = remember(revised_profile, await generate_plan(revised_profile, context))
+    before = {a.action_id: a.title for a in original.actions}
+    after = {a.action_id: a.title for a in revised.actions}
+    changes = [f"Added: {after[k]}" for k in after.keys() - before.keys()]
+    changes += [f"Removed: {before[k]}" for k in before.keys() - after.keys()]
+    if not changes:
+        changes = ["Your constraints were updated. The same actions remain eligible; no new benefit is claimed."]
     return CompareResponse(
-        original_plan=original_plan,
-        revised_plan=revised_plan,
+        original_plan=original, revised_plan=revised, revised_profile=revised_profile,
         changes_summary=changes,
-        preserved_constraints=preserved,
-        impact_notes=["Comparison is qualitative. Specific emission or exposure changes are not calculated in this version."],
+        preserved_constraints=[f"{b.label} ({b.start_time}–{b.end_time})" for b in revised_profile.routine_blocks if b.is_fixed],
+        impact_notes=["Qualitative comparison only. Current environmental context was refreshed; no numerical savings calculated."],
     )
-
-
-# --- Source lookup ---
-
-@app.get("/api/sources/{source_id}")
-async def get_source(source_id: str):
-    """Look up a curated source by ID."""
-    sources = load_sources()
-    if source_id not in sources:
-        raise HTTPException(status_code=404, detail=f"Source {source_id} not found")
-    return sources[source_id].model_dump()
 
 
 @app.get("/api/sources")
-async def get_all_sources():
-    """List all curated sources."""
-    sources = load_sources()
-    return [s.model_dump() for s in sources.values()]
+async def sources():
+    return list(load_sources().values())
 
 
-# --- Static files and SPA ---
+@app.get("/api/sources/{source_id}")
+async def source(source_id: str):
+    record = load_sources().get(source_id)
+    if record is None:
+        raise HTTPException(404, "Unknown source")
+    return record
 
-# Mount static files
-if STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.get("/")
-async def serve_index():
-    """Serve the main application page."""
-    index_path = STATIC_DIR / "index.html"
-    if index_path.exists():
-        return FileResponse(str(index_path))
-    return JSONResponse(
-        content={"message": "Saans API is running. Frontend not yet built.", "docs": "/docs"},
-    )
+async def index():
+    return FileResponse(STATIC_DIR / "index.html")

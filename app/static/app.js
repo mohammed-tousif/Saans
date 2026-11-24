@@ -1,6 +1,6 @@
 /**
  * Saans — Frontend Application
- * 
+ *
  * Mobile-first air quality planning assistant.
  * Communicates with the FastAPI backend via JSON API.
  */
@@ -17,6 +17,7 @@ const state = {
   sources: {},
   isGenerating: false,
   isSampleProfile: false,
+  revision: 0,
 };
 
 // --- Sample Profiles ---
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadSources();
   setupEventListeners();
   setupFlexibilitySlider();
+  updateSampleBannerForMode();
 });
 
 async function loadCities() {
@@ -103,6 +105,8 @@ function setupEventListeners() {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
+  document.getElementById('setup-form').addEventListener('input', () => { state.revision++; });
+
   // Form submission
   document.getElementById('setup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -135,6 +139,25 @@ function setupFlexibilitySlider() {
   }
 }
 
+async function updateSampleBannerForMode() {
+  try {
+    const res = await fetch('/health');
+    if (res.ok) {
+      const health = await res.json();
+      const note = document.getElementById('sample-note');
+      if (note) {
+        if (health.data_mode === 'fixture') {
+          note.textContent = '⚠ Sample profile data — not real people. Synthetic environmental test data is configured. Check the returned plan for its data source and time.';
+        } else {
+          note.textContent = '⚠ Sample profile data — not real people. Live environmental data is requested when you create a plan; availability and freshness are shown with the result.';
+        }
+      }
+    }
+  } catch (err) {
+    // Silently continue; the static text is an acceptable fallback.
+  }
+}
+
 // --- Tab Switching ---
 function switchTab(tabName) {
   state.currentTab = tabName;
@@ -156,10 +179,11 @@ function switchTab(tabName) {
 
 // --- Sample Profiles ---
 function loadSampleProfile(type) {
-  const sample = SAMPLE_PROFILES[type];
+  const sample = typeof type === 'object' ? type : SAMPLE_PROFILES[type];
   if (!sample) return;
 
-  state.isSampleProfile = true;
+  state.isSampleProfile = typeof type === 'string';
+  state.revision++;
 
   // Set city
   document.getElementById('city-select').value = sample.city;
@@ -191,6 +215,7 @@ function loadSampleProfile(type) {
   document.getElementById('has-children').checked = sample.has_children;
   document.getElementById('has-elderly').checked = sample.has_elderly;
   document.getElementById('has-respiratory').checked = sample.has_respiratory_concern;
+  document.getElementById('has-mobility').checked = !!sample.has_mobility_limitation;
 
   // Set flexibility
   const slider = document.getElementById('flexibility');
@@ -204,7 +229,7 @@ function addRoutineBlock(label = '', startTime = '09:00', endTime = '17:00') {
   const block = document.createElement('div');
   block.className = 'routine-block';
   block.innerHTML = `
-    <input type="text" placeholder="e.g., School drop-off" value="${escapeHtml(label)}" 
+    <input type="text" placeholder="e.g., School drop-off" value="${escapeHtml(label)}"
            aria-label="Commitment name" class="routine-label">
     <input type="time" value="${startTime}" aria-label="Start time" class="routine-start">
     <input type="time" value="${endTime}" aria-label="End time" class="routine-end">
@@ -257,6 +282,7 @@ function collectProfile() {
     has_children: document.getElementById('has-children').checked,
     has_elderly: document.getElementById('has-elderly').checked,
     has_respiratory_concern: document.getElementById('has-respiratory').checked,
+    has_mobility_limitation: document.getElementById('has-mobility').checked,
     flexibility_minutes: parseInt(document.getElementById('flexibility').value, 10),
     additional_notes: '',
   };
@@ -264,6 +290,8 @@ function collectProfile() {
 
 // --- Plan Generation ---
 async function createPlan(constraintChanges = []) {
+  if (state.isGenerating) return;
+  const revision = state.revision;
   const profile = collectProfile();
   if (!profile) return;
 
@@ -302,16 +330,21 @@ async function createPlan(constraintChanges = []) {
     });
 
     if (res.status === 429) {
-      showError('A plan is already being generated. Please wait a moment.');
+      showError('Planning is busy or the request limit has been reached. Please wait a minute and try again.');
       return;
     }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Server error (${res.status})`);
+      throw new Error(typeof err.detail === 'string' ? err.detail :
+        res.status === 422 ? 'Check your commitments: use valid times, with each end after its start.' : `Server error (${res.status})`);
     }
 
     const plan = await res.json();
+    if (revision !== state.revision) {
+      showError('Your setup changed. Create a new plan for the updated inputs.');
+      return;
+    }
     state.currentPlan = plan;
     state.airContext = plan.environmental_context;
 
@@ -339,12 +372,12 @@ function renderAirContext(ctx) {
 
   const card = document.getElementById('air-context');
   const loading = document.getElementById('air-loading');
-  loading.style.display = 'none';
+  if (loading) loading.style.display = 'none';
 
   const categoryColor = getCategoryColor(ctx.category);
   const isStale = ctx.is_stale;
   const sourceKind = ctx.source_kind === 'model' ? '📡 Model forecast' :
-    ctx.source_kind === 'fixture' ? '🧪 Fixture data' : '📍 Observation';
+    ctx.source_kind === 'fixture' ? '🧪 Fixture data' : ctx.source_kind === 'unavailable' ? 'Data unavailable' : '📍 Observation';
 
   let timeDisplay = 'Unknown';
   if (ctx.observed_at) {
@@ -399,7 +432,7 @@ function renderPlan(plan) {
   // Mode badge
   const modeBadge = document.getElementById('mode-badge');
   const modeLabels = {
-    ai: { text: '✨ AI-generated plan', cls: 'mode-ai' },
+    ai: { text: '✨ AI-selected actions · source-backed guidance', cls: 'mode-ai' },
     fallback: { text: '📋 Reviewed general guidance (AI unavailable)', cls: 'mode-fallback' },
     fixture: { text: '🧪 Fixture plan', cls: 'mode-fixture' },
   };
@@ -432,10 +465,12 @@ function renderPlan(plan) {
   renderConstraintButtons();
 }
 
+let actionCardSequence = 0;
 function createActionCard(action, number) {
+  const detailId = `detail-${++actionCardSequence}`;
   const card = document.createElement('div');
   card.className = 'action-card';
-  card.id = `action-${action.action_id}`;
+  card.id = `action-${actionCardSequence}`;
 
   const purposeCls = `purpose-${action.action_id.startsWith('ACT01') && parseInt(action.action_id.slice(3)) <= 3 ? 'exposure' : 'emissions'}`;
 
@@ -447,20 +482,20 @@ function createActionCard(action, number) {
   const evidenceLinks = (action.evidence_ids || []).map(eid => {
     const src = state.sources[eid];
     if (src) {
-      return `<span class="evidence-link" onclick="showSource('${eid}')" tabindex="0" role="button" 
-              title="${escapeHtml(src.title)}">${eid}</span>`;
+      return `<button type="button" class="evidence-link" onclick="showSource('${eid}')" tabindex="0" role="button"
+              title="${escapeHtml(src.title)}">${eid}</button>`;
     }
     return `<span class="evidence-link">${eid}</span>`;
   }).join('');
 
   card.innerHTML = `
-    <div class="action-card-header" onclick="toggleAction(this)" tabindex="0" 
-         role="button" aria-expanded="false" aria-controls="detail-${action.action_id}">
+    <div class="action-card-header" onclick="toggleAction(this)" tabindex="0"
+         role="button" aria-expanded="false" aria-controls="${detailId}">
       <span class="action-number">${number}</span>
       <span class="action-title">${escapeHtml(action.title)}</span>
       <span class="action-toggle" aria-hidden="true">▼</span>
     </div>
-    <div class="action-details" id="detail-${action.action_id}">
+    <div class="action-details" id="${detailId}">
       ${action.time_window ? `
         <div class="action-detail-row">
           <div class="action-detail-label">When</div>
@@ -534,33 +569,33 @@ function renderConstraintButtons() {
 
   // Purifier toggle
   if (state.profile.has_purifier) {
-    constraints.push({ label: 'No purifier available', icon: '🚫', change: 'Remove air purifier — user no longer has access to a purifier' });
+    constraints.push({ label: 'No purifier available', icon: '🚫', change: 'purifier_off' });
   } else {
-    constraints.push({ label: 'I got a purifier', icon: '✅', change: 'User now has access to an air purifier' });
+    constraints.push({ label: 'I got a purifier', icon: '✅', change: 'purifier_on' });
   }
 
   // Budget change
   if (state.profile.budget_band === 'zero') {
-    constraints.push({ label: 'I can spend up to ₹500', icon: '💰', change: 'Budget changed from zero to low (under ₹500/month)' });
+    constraints.push({ label: 'I can spend up to ₹500', icon: '💰', change: 'budget_low' });
   } else {
-    constraints.push({ label: 'No extra spending', icon: '💸', change: 'Budget changed to zero — no extra spending available' });
+    constraints.push({ label: 'No extra spending', icon: '💸', change: 'budget_zero' });
   }
 
   // Transport
   if (state.profile.available_transport.includes('public_transit')) {
-    constraints.push({ label: 'Metro unavailable', icon: '🚇', change: 'Public transit/metro is unavailable today' });
+    constraints.push({ label: 'Metro unavailable', icon: '🚇', change: 'transit_off' });
   } else {
-    constraints.push({ label: 'Metro available today', icon: '🚇', change: 'Public transit/metro is now available' });
+    constraints.push({ label: 'Metro available today', icon: '🚇', change: 'transit_on' });
   }
 
   // Fixed time
   if (state.profile.routine_blocks.length > 0) {
     const first = state.profile.routine_blocks[0];
-    constraints.push({ label: `Can't change ${first.label} time`, icon: '⏰', change: `${first.label} time (${first.start_time}–${first.end_time}) is fixed and cannot move` });
+    constraints.push({ label: `Can't change ${first.label} time`, icon: '⏰', change: 'keep_schedule' });
   }
 
   // Flexibility
-  constraints.push({ label: 'More flexible today (+30 min)', icon: '🕐', change: 'User has 30 more minutes of schedule flexibility today' });
+  constraints.push({ label: 'More flexible today (+30 min)', icon: '🕐', change: 'more_flexibility' });
 
   container.innerHTML = constraints.map(c =>
     `<button class="constraint-btn" onclick="changeConstraint('${escapeHtml(c.change)}')" type="button">
@@ -570,7 +605,13 @@ function renderConstraintButtons() {
 }
 
 async function changeConstraint(changeDescription) {
-  if (state.isGenerating) return;
+  if (state.isGenerating || !state.currentPlan) return;
+  state.isGenerating = true;
+  const revision = state.revision;
+  state._pendingRevisedPlan = null;
+  state._pendingRevisedProfile = null;
+  const accept = document.getElementById('btn-accept-revised');
+  accept.disabled = true;
 
   // Show comparison modal
   const modal = document.getElementById('compare-modal');
@@ -585,14 +626,19 @@ async function changeConstraint(changeDescription) {
       body: JSON.stringify({
         profile: state.profile,
         changed_constraints: [changeDescription],
+        baseline_plan_id: state.currentPlan.plan_id,
       }),
     });
 
     if (!res.ok) throw new Error(`Server error (${res.status})`);
 
     const comparison = await res.json();
+    if (revision !== state.revision || !modal.open) return;
     renderComparison(comparison);
     state._pendingRevisedPlan = comparison.revised_plan;
+    state._pendingRevisedProfile = comparison.revised_profile;
+    state._pendingRevision = revision;
+    accept.disabled = false;
 
   } catch (err) {
     body.innerHTML = `
@@ -600,6 +646,8 @@ async function changeConstraint(changeDescription) {
         <h3>Comparison failed</h3>
         <p>${escapeHtml(err.message)}</p>
       </div>`;
+  } finally {
+    state.isGenerating = false;
   }
 }
 
@@ -660,12 +708,17 @@ function renderComparison(comparison) {
 }
 
 function acceptRevisedPlan() {
-  if (state._pendingRevisedPlan) {
+  if (state._pendingRevisedPlan && state._pendingRevision === state.revision) {
+    state.profile = state._pendingRevisedProfile;
+    loadSampleProfile(state.profile);
     state.currentPlan = state._pendingRevisedPlan;
     renderPlan(state._pendingRevisedPlan);
     if (state._pendingRevisedPlan.environmental_context) {
       renderAirContext(state._pendingRevisedPlan.environmental_context);
     }
+    renderHomeActions(state.currentPlan);
+    renderProvenance(state.currentPlan.environmental_context);
+    updateHeaderStatus(state.currentPlan);
     state._pendingRevisedPlan = null;
   }
   document.getElementById('compare-modal').close();
@@ -744,7 +797,7 @@ function renderProvenance(ctx) {
     </div>
     <div class="provenance-row">
       <span class="provenance-label">Data type</span>
-      <span class="provenance-value">${ctx.source_kind === 'model' ? 'Model forecast (not station observation)' : ctx.source_kind === 'fixture' ? 'Synthetic fixture data' : 'Observation'}</span>
+      <span class="provenance-value">${ctx.source_kind === 'model' ? 'Model forecast (not station observation)' : ctx.source_kind === 'fixture' ? 'Synthetic fixture data' : ctx.source_kind === 'unavailable' ? 'Unavailable' : 'Observation'}</span>
     </div>
     ${ctx.index_system ? `
     <div class="provenance-row">
@@ -821,7 +874,7 @@ function escapeHtml(str) {
   if (!str) return '';
   const div = document.createElement('div');
   div.textContent = String(str);
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function getCategoryColor(category) {
@@ -830,7 +883,7 @@ function getCategoryColor(category) {
   if (cat.includes('good')) return 'var(--color-aq-good)';
   if (cat.includes('fair')) return 'var(--color-aq-fair)';
   if (cat.includes('moderate')) return 'var(--color-aq-moderate)';
-  if (cat.includes('poor') && !cat.includes('very')) return 'var(--color-aq-poor)';
+  if (cat.includes('poor') && !cat.includes('very') && !cat.includes('extreme')) return 'var(--color-aq-poor)';
   if (cat.includes('very poor')) return 'var(--color-aq-very-poor)';
   if (cat.includes('extreme') || cat.includes('hazard') || cat.includes('severe')) return 'var(--color-aq-extreme)';
   return 'var(--color-text-secondary)';

@@ -1,5 +1,7 @@
 # Challenge 06 submission kit
 
+**25 November release status.** The public app at https://saans-wwwc.onrender.com is serving live CAMS data and Gemini 3.5 Flash-Lite plans. Published repository: https://github.com/mohammed-tousif/Saans. The user-published LinkedIn URL is below. The demo video and final competition attempt are pending.
+
 ## Verified requirements — 24 November 2026
 
 Signed-in source: https://hack2skill.com/event/pwvirtual1/dashboard/submissions/6afaaed39be15aea670e2bed
@@ -16,7 +18,7 @@ Saans turns household routines, resources and transport constraints into practic
 
 ## Draft: GenAI usage
 
-Google Gemini is integrated server-side to rank up to three eligible action IDs using a reduced household and environmental summary. Its output is validated against a closed catalogue; factual advice and citations are supplied by application code. Antigravity supported the initial implementation and follow-up changes; Codex reviewed and repaired the application and prepared verification and release records. Before submitting, confirm successful live Gemini generation on the deployed instance. Current local generation attempts return upstream errors, so this draft must not imply live AI success yet.
+Google Gemini ranks up to three eligible action IDs using a reduced household and air-quality summary. The server validates those IDs and attaches explanations and citations from a reviewed catalogue. Live plan creation and comparison passed on Render using Gemini 3.5 Flash-Lite, which handles generation if the configured primary returns a transient error. Antigravity supported the initial build and Codex repaired and verified the implementation.
 
 ## Three-minute demo script (official maximum: under four minutes)
 
@@ -29,6 +31,8 @@ Google Gemini is integrated server-side to rank up to three eligible action IDs 
 2:40 — Enter an invalid routine time to show a readable validation error, then correct it. Explain honest fallback and current limits. End with public repository and app URLs after they exist.
 
 Video acceptance: show all core features, live readable inputs, success and error cases, actual AI input/output and dynamic behavior. Narration is optional. Keep total duration under four minutes; test unlisted YouTube/public Drive link without account access. These requirements were read from the full official video guide on 25 November; see docs/compliance-audit.md.
+
+Verified rehearsal on Render: Delhi, moderate budget, children, purifier, car and public transit, with school drop-off 08:00–08:45. The initial AI run selected source control, public transport and combined errands. Comparison with public transit and purifier off and zero extra spend removed the public transport suggestion and preserved school drop-off. Both responses returned AI mode and the actual Flash-Lite model ID. An end time of 07:45 triggered validation. These are observed results. Record the actual live results in the demo.
 
 ## LinkedIn draft — publish only after deployment and review
 

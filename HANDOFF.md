@@ -1,5 +1,11 @@
 # Saans shared handoff
 
+## 25 November 2026 — working AI verified on Render (Codex)
+
+Active editor: Codex. Render auto-deployed application commit 7c41173 in 26.6s. https://saans-wwwc.onrender.com returned AI mode with gemini-3.5-flash-lite and live CAMS model context for a fictional Delhi household. Initial plan took 5.38s and returned ACT001, ACT004, ACT007. Comparison took 3.36s. Disabling transit and purifier and choosing zero extra spend removed ACT004, kept the stored baseline unchanged, and preserved school drop-off 08:00–08:45. End time before start returned HTTP422. This verifies live plan and comparison API paths. No browser UX retest in this pass. Gemini 3.8 Flash still returned503 in direct tests. The working backup used the existing Gemini key; no Render settings or secrets were changed. 38 tests passed. Source tree was 711,534 bytes and ZIP 256,799 bytes at the application commit.
+
+The linked public repository and deployed app are ready. User-published LinkedIn post is saved in the submission kit. Video remains pending and the last inspected attempt count was 0/3. Docs updated with the verified demo scenario and GenAI wording. Next three tasks: record and verify a live demo under four minutes; check actual organizer mentions/build image and anonymous access; recheck final links and attempt status with the user. No local server process changed. Local launch is .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016.
+
 ## 25 November 2026 — Gemini backup verified locally (Codex)
 
 Active editor: Codex. Existing launch command is .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016. No local server started or stopped in this pass. The prior Render release still used reviewed fallback in a fresh live check. Direct structured requests returned 503 on 3.8 Flash via both generation endpoints. 3.5 Flash-Lite returned valid JSON. Patched planner tried the configured 3.8 Flash primary then used 3.5 Flash-Lite successfully in 3.67s using the local key, a fictional household and synthetic air context.

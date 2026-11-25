@@ -1,6 +1,6 @@
 # Saans release guide
 
-Prepared 24 November 2026. Local release candidate, not a deployed or submitted product.
+Updated 25 November 2026. The public Render service is https://saans-wwwc.onrender.com. The AI recovery build is live and verified. Competition submission is pending.
 
 ## Reproduce
 
@@ -15,20 +15,21 @@ Start command: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --wor
 Health path: `/health`
 Python: 3.11. Use HTTPS on the hosting platform. Keep exactly one instance and one worker: snapshots and request budgets are process-local.
 
-Set GEMINI_API_KEY in the hosting secret manager, GEMINI_MODEL=gemini-3.8-flash, DATA_MODE=live. Never place credentials in source, client code, screenshots or submission text. If Google generation fails, the app shows fallback guidance; this does not satisfy successful live AI verification.
+Set `GEMINI_API_KEY` in the hosting secret manager and use `DATA_MODE=live`. `GEMINI_MODEL` and `GEMINI_BACKUP_MODEL` default to `gemini-3.5-flash-lite`. The existing Render installation has 3.8 Flash configured as primary and successfully used Flash-Lite after a transient failure. Keep credentials out of source, footage, and submission text. If neither call yields usable output, the app labels the reviewed fallback guidance.
 
-Dockerfile and Procfile are prepared. Docker image build and hosted deployment have not been verified. No paid hosting has been authorized. Choose the user's hosting account before creating resources; present actual settings and costs before publishing.
+Render built the repository's Dockerfile on the existing Free service. The Procfile is available for compatible hosts.
 
 ## Release gates
 
-- [x] Locked environment installed and 32 tests passed.
+- [x] Locked environment installed and 38 tests passed.
 - [x] Browser: fixture planning, mobility preservation, comparison acceptance, repeat generation and changed household.
 - [x] Phone-sized Today view inspected; no horizontal overflow observed.
 - [x] 32 KiB request-body limit and no-store/frame/content-type protections.
-- [ ] Successful live Gemini generation (metadata succeeds; generation returns server error).
-- [ ] Public HTTPS app and clean-session smoke test.
-- [ ] Public GitHub repository under 10 MB (no remote configured at inspection).
-- [ ] Record/upload demo and publish approved LinkedIn post.
+- [x] Successful live Gemini generation and revised plan with Flash-Lite.
+- [x] Public HTTPS app and API smoke test with a fictional household.
+- [x] Public GitHub repository with source archive under 10 MB and single master branch.
+- [x] User published LinkedIn post. Verify organizer mentions and actual build image before submitting.
+- [ ] Record and upload the demo. Test playback without a login.
 - [ ] User approves final submission; no attempts consumed by Codex.
 
 ## Known limitations

@@ -1,5 +1,7 @@
 # Challenge 06 compliance audit
 
+**25 November follow-up.** Render now serves live CAMS data and passed real Gemini Flash-Lite plan creation, constraint comparison, and invalid-schedule validation. The user published the LinkedIn narrative. The video and final link review remain. The original audit below records the earlier state and its rule sources.
+
 Checked 25 November 2026 by Codex using the user's signed-in Chrome and current source at 40dc19e. Verdict: **aligned in concept, NOT ready for the first attempt**. No attempt consumed; portal showed 0/3. This is an evidence review, not an organizer eligibility decision or predicted score.
 
 ## Official sources read

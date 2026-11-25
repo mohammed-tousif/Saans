@@ -37,10 +37,10 @@ node --check app/static/app.js
 
 ## State and limits
 
-Seven narrowed actions are enabled; others await evidence review. No indoor sensor, numerical emissions savings, clinical validation, public deployment or verified live Gemini integration is claimed. Comparison snapshots are held in process memory (up to 100), expire from use after 30 minutes, and are pruned on planning/comparison requests. Restarting clears them. Single-worker prototype only: rate limits and snapshots are not shared across workers.
+The public app runs on Render. Live verification on 25 November 2026 confirmed CAMS model data, Gemini 3.5 Flash-Lite planning, and AI-assisted constraint comparison. Seven reviewed actions are enabled. Impact explanations are qualitative and indoor conditions are unmeasured. Comparison snapshots are held in process memory (up to 100), expire from use after 30 minutes, and are pruned on planning/comparison requests. Restarting clears them. Rate limits and snapshots are process-local.
 
 Read HANDOFF.md, TASKS.md and the grounding correction register before changing code. See DESIGN.md for trust boundaries and known limits.
 
 ## Release and submission
 
-See [release guide](docs/release.md) and [submission kit](docs/submission-kit.md). The official dashboard deadline is 29 November 2026 at 23:59 IST. Local tests pass; live Gemini generation and public deployment remain release gates.
+[Open the public app](https://saans-wwwc.onrender.com). See the [release guide](docs/release.md) and [submission kit](docs/submission-kit.md). The official dashboard deadline is 29 November 2026 at 23:59 IST. The video is still pending.

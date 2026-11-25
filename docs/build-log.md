@@ -29,3 +29,8 @@ Codex added release guards/tests, fixed UI error text, installed/validated locke
 
 
 24 Nov deployment pass: user supplied empty GitHub repository mohammed-tousif/Saans and signed-in Render; Codex preparing authorized free deployment. Secret scan passed for candidate files; no .env history. Deployment pending verification.
+
+
+## 25 November 2026 — clay frontend
+
+Codex implemented user-requested clay frontend in clay.css and updated HTML/copy/icons and air-reading rendering. Local fixture preview left running for review (PID58256, port8016). Initial release pushed as5929884; Render free Docker creation submitted in prior session without observing final result. Redesign push follows.

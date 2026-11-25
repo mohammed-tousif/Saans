@@ -7,8 +7,9 @@
     <title>Saans — Your family's cleaner-air day</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/clay.css">
 </head>
 <body>
     <div id="app">
@@ -16,10 +17,10 @@
         <header class="app-header" role="banner">
             <div class="header-content">
                 <h1 class="logo">
-                    <span class="logo-icon" aria-hidden="true">🌿</span>
+                    <span class="logo-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 12h15c8 0 8-8 2-8-3 0-4 2-4 4M5 18h20M5 24h12c7 0 7 6 2 6"/></svg></span>
                     <span class="logo-text">Saans</span>
                 </h1>
-                <p class="tagline">Your family's cleaner-air day</p>
+                <p class="tagline">A little more breathing room.</p>
             </div>
             <div class="header-status" id="header-status" aria-live="polite"></div>
         </header>
@@ -27,20 +28,20 @@
         <!-- Navigation -->
         <nav class="tab-nav" role="tablist" aria-label="Main navigation">
             <button class="tab active" role="tab" aria-selected="true" data-tab="setup" id="tab-setup">
-                <span class="tab-icon" aria-hidden="true">🏠</span>
-                <span class="tab-label">Setup</span>
+                <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4zM9 20v-7h6v7"/></svg></span>
+                <span class="tab-label">Your household</span>
             </button>
             <button class="tab" role="tab" aria-selected="false" data-tab="today" id="tab-today">
-                <span class="tab-icon" aria-hidden="true">📋</span>
-                <span class="tab-label">Today</span>
+                <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 11h16m-11 4h2m3 0h2"/></svg></span>
+                <span class="tab-label">Your day</span>
             </button>
             <button class="tab" role="tab" aria-selected="false" data-tab="home" id="tab-home">
-                <span class="tab-icon" aria-hidden="true">🏡</span>
-                <span class="tab-label">My Home</span>
+                <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V7l8-3 8 3v13H4zm5 0v-6h6v6M8 9h1m6 0h1"/></svg></span>
+                <span class="tab-label">At home</span>
             </button>
             <button class="tab" role="tab" aria-selected="false" data-tab="sources" id="tab-sources">
-                <span class="tab-icon" aria-hidden="true">📊</span>
-                <span class="tab-label">Sources</span>
+                <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h7v16H4zm9 0h7v16h-7M7 8h1m8 0h1M7 12h1m8 0h1"/></svg></span>
+                <span class="tab-label">The evidence</span>
             </button>
         </nav>
 
@@ -49,31 +50,36 @@
 
             <!-- SETUP VIEW -->
             <section class="view active" id="view-setup" role="tabpanel" aria-labelledby="tab-setup">
-                <div class="view-header">
-                    <h2>Set up your household</h2>
-                    <p>Tell us about your city and daily routine. We'll create a practical plan for today.</p>
+                <div class="setup-intro">
+                    <div class="view-header">
+                        <p class="eyebrow">SMALL CHANGES. EVERYDAY LIFE.</p>
+                        <h2>Make room<br>for a <em>better day.</em></h2>
+                        <p>Your city. Your routine. Your people.<br>Let's find air-quality choices that fit your life.</p>
+                        <div class="intro-footnote"><span class="tiny-dot"></span> Grounded in evidence. Made for your day.</div>
+                    </div>
+                    <div class="breathing-object" aria-hidden="true"><div class="clay-orbit orbit-back"></div><div class="clay-sphere"></div><div class="clay-orbit orbit-front"></div><span class="sculpture-label">a little space to breathe</span></div>
                 </div>
 
                 <!-- Sample Profile Banner -->
                 <div class="sample-banner" id="sample-banner">
                     <div class="sample-banner-content">
-                        <strong>Quick demo?</strong> Load a sample household profile to see how Saans works.
+                        <span class="sample-kicker">TAKE A LOOK AROUND</span><strong>Start with a day you know.</strong><span>Try a fictional household, or make this your own below.</span>
                     </div>
                     <div class="sample-banner-actions">
                         <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('parent')" id="btn-sample-parent">
-                            👨‍👧 School-run parent
+                            School-run parent <span aria-hidden="true">↗</span>
                         </button>
                         <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('worker')" id="btn-sample-worker">
-                            👷 Outdoor worker
+                            Outdoor worker <span aria-hidden="true">↗</span>
                         </button>
                     </div>
-                    <p class="sample-note" id="sample-note">⚠ Sample profile data — not real people.</p>
+                    <p class="sample-note" id="sample-note">Sample profile data — not real people.</p>
                 </div>
 
                 <form id="setup-form" class="setup-form" novalidate>
                     <!-- City Selection -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Your City</legend>
+                        <legend class="form-legend"><span class="step-number">01</span> Where you live</legend>
                         <div class="select-wrapper">
                             <select id="city-select" name="city" required aria-label="Select your city">
                                 <option value="">Choose a city...</option>
@@ -83,7 +89,7 @@
 
                     <!-- Routine Blocks -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Fixed Commitments</legend>
+                        <legend class="form-legend"><span class="step-number">02</span> What stays on your calendar</legend>
                         <p class="form-help">Add time blocks that cannot move (school, work, etc.)</p>
                         <div id="routine-blocks" class="routine-blocks"></div>
                         <button type="button" class="btn btn-ghost btn-sm" onclick="addRoutineBlock()" id="btn-add-routine">
@@ -93,7 +99,7 @@
 
                     <!-- Transport -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Available Transport</legend>
+                        <legend class="form-legend"><span class="step-number">03</span> How you get around</legend>
                         <div class="checkbox-grid" role="group" aria-label="Transport options">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="transport" value="walk" checked> Walking
@@ -118,7 +124,7 @@
 
                     <!-- Budget -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Monthly Air-Quality Budget</legend>
+                        <legend class="form-legend"><span class="step-number">04</span> What feels affordable</legend>
                         <div class="radio-group" role="radiogroup" aria-label="Budget band">
                             <label class="radio-label">
                                 <input type="radio" name="budget" value="zero" checked> No extra spend
@@ -137,7 +143,7 @@
 
                     <!-- Home Resources -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Home Resources</legend>
+                        <legend class="form-legend"><span class="step-number">05</span> What you have at home</legend>
                         <div class="checkbox-grid" role="group" aria-label="Home resources">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="has_purifier" id="has-purifier"> Air purifier
@@ -162,7 +168,7 @@
 
                     <!-- Household Members -->
                     <fieldset class="form-group">
-                        <legend class="form-legend">Household Needs</legend>
+                        <legend class="form-legend"><span class="step-number">06</span> Who we’re planning for</legend>
                         <div class="checkbox-grid" role="group" aria-label="Household needs">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="has_children" id="has-children"> Children at home
@@ -188,12 +194,12 @@
                     <!-- Submit -->
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary btn-lg" id="btn-create-plan">
-                            <span class="btn-text">Create my plan</span>
+                            <span class="btn-text">Find my everyday plan <span aria-hidden="true">→</span></span>
                             <span class="btn-loading" aria-hidden="true" style="display:none;">
                                 <span class="spinner"></span> Generating...
                             </span>
                         </button>
-                        <p class="data-sharing-notice">
+                        <details class="privacy-details"><summary>Your inputs &amp; privacy</summary><p class="data-sharing-notice">
                             When you submit, your household inputs, including routine details, are sent to our server.
                             The application keeps temporary plan snapshots in server memory for comparisons.
                             When AI ranking is available, Google's Gemini API receives your city, budget, resources,
@@ -202,13 +208,14 @@
                             and additional notes are excluded from the Gemini request. Google's processing is governed
                             by its API terms. No account or login is required.
                             <a href="#" onclick="switchTab('sources'); return false;">Learn about our data sources.</a>
-                        </p>
+                        </p></details>
                     </div>
                 </form>
             </section>
 
             <!-- TODAY VIEW -->
             <section class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today" hidden>
+                <div class="view-header compact"><p class="eyebrow">YOUR DAY, CONSIDERED</p><h2>A plan with<br>room for real life.</h2><p>Practical choices, with the reasons behind them.</p></div>
                 <!-- Air Quality Context -->
                     <div class="air-loading" id="air-loading" style="display:none;" role="status">
                         <span class="spinner"></span>
@@ -225,11 +232,11 @@
                     <div class="mode-badge" id="mode-badge"></div>
 
                     <!-- Actions -->
-                    <h2 class="section-title">Your actions for today</h2>
+                    <h2 class="section-title">A few things you can do</h2>
                     <div class="actions-list" id="actions-list"></div>
 
                     <!-- Timeline -->
-                    <h2 class="section-title">Daily timeline</h2>
+                    <h2 class="section-title">The shape of your day</h2>
                     <div class="timeline" id="timeline"></div>
 
                     <!-- Warnings -->
@@ -255,7 +262,7 @@
             <!-- MY HOME VIEW -->
             <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home" hidden>
                 <div class="view-header">
-                    <h2>My Home</h2>
+                    <p class="eyebrow">A LITTLE CARE, INDOORS</p><h2>Closer to home.</h2>
                     <p>Indoor air guidance based on your home resources.</p>
                 </div>
 
@@ -275,7 +282,7 @@
             <!-- SOURCES VIEW -->
             <section class="view" id="view-sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
                 <div class="view-header">
-                    <h2>Sources & Data</h2>
+                    <p class="eyebrow">NOT JUST A RECOMMENDATION</p><h2>Behind every suggestion.</h2>
                     <p>Where our information comes from and what it means.</p>
                 </div>
 

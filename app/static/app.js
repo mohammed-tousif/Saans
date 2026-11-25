@@ -23,7 +23,7 @@ const state = {
 // --- Sample Profiles ---
 const SAMPLE_PROFILES = {
   parent: {
-    label: '👨‍👧 School-run parent (Delhi, sample data)',
+    label: 'School-run parent (Delhi, sample data)',
     city: 'delhi',
     routine_blocks: [
       { label: 'School drop-off', start_time: '08:00', end_time: '08:45', is_fixed: true, location: 'commute' },
@@ -41,7 +41,7 @@ const SAMPLE_PROFILES = {
     flexibility_minutes: 30,
   },
   worker: {
-    label: '👷 Outdoor worker (Delhi, sample data)',
+    label: 'Outdoor worker (Delhi, sample data)',
     city: 'delhi',
     routine_blocks: [
       { label: 'Work shift', start_time: '09:00', end_time: '17:00', is_fixed: true, location: 'outdoor' },
@@ -147,9 +147,9 @@ async function updateSampleBannerForMode() {
       const note = document.getElementById('sample-note');
       if (note) {
         if (health.data_mode === 'fixture') {
-          note.textContent = '⚠ Sample profile data — not real people. Synthetic environmental test data is configured. Check the returned plan for its data source and time.';
+          note.textContent = 'Sample profile data — not real people. Synthetic environmental test data is configured. Check the returned plan for its data source and time.';
         } else {
-          note.textContent = '⚠ Sample profile data — not real people. Live environmental data is requested when you create a plan; availability and freshness are shown with the result.';
+          note.textContent = 'Sample profile data — not real people. Live environmental data is requested when you create a plan; availability and freshness are shown with the result.';
         }
       }
     }
@@ -376,8 +376,8 @@ function renderAirContext(ctx) {
 
   const categoryColor = getCategoryColor(ctx.category);
   const isStale = ctx.is_stale;
-  const sourceKind = ctx.source_kind === 'model' ? '📡 Model forecast' :
-    ctx.source_kind === 'fixture' ? '🧪 Fixture data' : ctx.source_kind === 'unavailable' ? 'Data unavailable' : '📍 Observation';
+  const sourceKind = ctx.source_kind === 'model' ? 'Model forecast' :
+    ctx.source_kind === 'fixture' ? 'Fixture data' : ctx.source_kind === 'unavailable' ? 'Data unavailable' : 'Observation';
 
   let timeDisplay = 'Unknown';
   if (ctx.observed_at) {
@@ -401,23 +401,25 @@ function renderAirContext(ctx) {
 
   let staleHtml = '';
   if (isStale) {
-    staleHtml = `<div class="stale-warning">⚠ Data is older than expected. Treat with caution.</div>`;
+    staleHtml = `<div class="stale-warning">Data is older than expected. Treat with caution.</div>`;
   }
 
   card.innerHTML = `
+    <p class="eyebrow">THE AIR AROUND YOU</p>
     <div class="air-header">
       <span class="air-location">${escapeHtml(ctx.location_label)}</span>
       ${ctx.category ? `<span class="air-category" style="background:${categoryColor}">${escapeHtml(ctx.category)}</span>` : ''}
     </div>
+    <div class="air-reading"><strong>${ctx.index_value == null ? '—' : Number(ctx.index_value).toFixed(0)}</strong><span>${escapeHtml(ctx.index_system || 'Index unavailable')}<small>${sourceKind} · ${timeDisplay}</small></span></div>
     <div class="air-meta">
       <span class="air-meta-item">${sourceKind}</span>
-      ${ctx.index_system ? `<span class="air-meta-item">📏 ${escapeHtml(ctx.index_system)}: ${ctx.index_value}</span>` : ''}
-      <span class="air-meta-item">🕐 ${timeDisplay}</span>
-      <span class="air-meta-item">📌 ${escapeHtml(ctx.provider)}</span>
+      ${ctx.index_system ? `<span class="air-meta-item">${escapeHtml(ctx.index_system)}: ${ctx.index_value}</span>` : ''}
+      <span class="air-meta-item">${timeDisplay}</span>
+      <span class="air-meta-item">${escapeHtml(ctx.provider)}</span>
     </div>
     ${pollutantsHtml}
     ${staleHtml}
-    ${ctx.source_kind === 'fixture' ? '<div class="stale-warning">🧪 This is synthetic test data, not real measurements.</div>' : ''}
+    ${ctx.source_kind === 'fixture' ? '<div class="stale-warning">This is synthetic test data, not real measurements.</div>' : ''}
   `;
 }
 
@@ -432,9 +434,9 @@ function renderPlan(plan) {
   // Mode badge
   const modeBadge = document.getElementById('mode-badge');
   const modeLabels = {
-    ai: { text: '✨ AI-selected actions · source-backed guidance', cls: 'mode-ai' },
-    fallback: { text: '📋 Reviewed general guidance (AI unavailable)', cls: 'mode-fallback' },
-    fixture: { text: '🧪 Fixture plan', cls: 'mode-fixture' },
+    ai: { text: 'AI-selected actions · source-backed guidance', cls: 'mode-ai' },
+    fallback: { text: 'Reviewed general guidance (AI unavailable)', cls: 'mode-fallback' },
+    fixture: { text: 'Fixture plan', cls: 'mode-fixture' },
   };
   const mode = modeLabels[plan.generation_mode] || modeLabels.fallback;
   modeBadge.className = `mode-badge ${mode.cls}`;
@@ -569,33 +571,33 @@ function renderConstraintButtons() {
 
   // Purifier toggle
   if (state.profile.has_purifier) {
-    constraints.push({ label: 'No purifier available', icon: '🚫', change: 'purifier_off' });
+    constraints.push({ label: 'No purifier available', icon: '−', change: 'purifier_off' });
   } else {
-    constraints.push({ label: 'I got a purifier', icon: '✅', change: 'purifier_on' });
+    constraints.push({ label: 'I got a purifier', icon: '+', change: 'purifier_on' });
   }
 
   // Budget change
   if (state.profile.budget_band === 'zero') {
-    constraints.push({ label: 'I can spend up to ₹500', icon: '💰', change: 'budget_low' });
+    constraints.push({ label: 'I can spend up to ₹500', icon: '+', change: 'budget_low' });
   } else {
-    constraints.push({ label: 'No extra spending', icon: '💸', change: 'budget_zero' });
+    constraints.push({ label: 'No extra spending', icon: '−', change: 'budget_zero' });
   }
 
   // Transport
   if (state.profile.available_transport.includes('public_transit')) {
-    constraints.push({ label: 'Metro unavailable', icon: '🚇', change: 'transit_off' });
+    constraints.push({ label: 'Metro unavailable', icon: '↔', change: 'transit_off' });
   } else {
-    constraints.push({ label: 'Metro available today', icon: '🚇', change: 'transit_on' });
+    constraints.push({ label: 'Metro available today', icon: '↔', change: 'transit_on' });
   }
 
   // Fixed time
   if (state.profile.routine_blocks.length > 0) {
     const first = state.profile.routine_blocks[0];
-    constraints.push({ label: `Can't change ${first.label} time`, icon: '⏰', change: 'keep_schedule' });
+    constraints.push({ label: `Can't change ${first.label} time`, icon: '◷', change: 'keep_schedule' });
   }
 
   // Flexibility
-  constraints.push({ label: 'More flexible today (+30 min)', icon: '🕐', change: 'more_flexibility' });
+  constraints.push({ label: 'More flexible today (+30 min)', icon: '+', change: 'more_flexibility' });
 
   container.innerHTML = constraints.map(c =>
     `<button class="constraint-btn" onclick="changeConstraint('${escapeHtml(c.change)}')" type="button">
@@ -824,7 +826,7 @@ function renderProvenance(ctx) {
     ${ctx.is_stale ? `
     <div class="provenance-row">
       <span class="provenance-label">Freshness</span>
-      <span class="provenance-value" style="color:var(--color-warning);">⚠ Stale — older than expected</span>
+      <span class="provenance-value" style="color:var(--color-warning);">Stale — older than expected</span>
     </div>` : ''}
   `;
 }

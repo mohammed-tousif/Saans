@@ -29,3 +29,8 @@ Use uv.lock plus hashed production export and single-worker deployment. Keep mod
 
 
 24 Nov deployment pass: user supplied empty GitHub repository mohammed-tousif/Saans and signed-in Render; Codex preparing authorized free deployment. Secret scan passed for candidate files; no .env history. Deployment pending verification.
+
+
+## 25 November 2026 — clay frontend
+
+Follow user claymorphism direction: warm ivory, sage and peach, tactile inset/outset surfaces and original CSS sculpture. Preserve backend and DOM hooks. Use in-app browser for local QA while Chrome unavailable; do not infer deployment success or create duplicate Render services.

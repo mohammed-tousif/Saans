@@ -1,5 +1,15 @@
 # Saans shared handoff
 
+## Clay redesign — 25 November 2026 (Codex)
+
+User rejected original frontend and requested claymorphism. Codex replaced its presentation with ivory/sage/peach clay surfaces, CSS breathing sculpture, custom outline icons, desktop sidebar, mobile navigation, numbered two-column setup, prominent labelled air reading and expandable privacy details. Existing IDs/API behavior retained. New stylesheet app/static/clay.css layers over the base styles.
+
+Checks: node syntax and whitespace checks pass. Local fixture browser flow: sample creation, comparison, acceptance, desktop 1440px and mobile 390px; no horizontal overflow observed, no captured browser errors. No claim of real AI success. Local preview at http://127.0.0.1:8016 uses fixture data and no Gemini key; PID 58256/session 59065 retained for user review.
+
+Publication: initial release commit 5929884 was pushed to https://github.com/mohammed-tousif/Saans (master). Render creation was submitted with free $0 Docker service, Singapore, DATA_MODE=live and /health path, but the resulting service URL/status has NOT been observed. Chrome disconnected after inactivity; only in-app browser available on 25 Nov. No Gemini key was configured in Render by Codex. Do not create a duplicate service before inspecting the existing one. Redesign is being pushed to the same authorized repository.
+
+Next three tasks: reconnect Chrome and inspect the submitted Render service/build; configure Gemini secret through an authorized private channel and validate hosted flows; complete video/narrative/submission links before 29 November 23:59 IST.
+
 ## Deployment in progress — 24 November 2026
 
 Active editor: Codex. User provided https://github.com/mohammed-tousif/Saans.git and authorized Chrome access to signed-in Render for the agreed free service deployment. Remote is empty. Candidate files total approximately 640 KB; configured-key and key-pattern scan found no matches; .env is ignored and absent from git history. Preparing publication and Render free single-worker deployment. No deployed result yet.

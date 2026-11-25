@@ -33,3 +33,8 @@ Locked install succeeded; 32 tests pass (0.93s), Ruff F, node syntax and diff wh
 
 
 24 Nov deployment pass: user supplied empty GitHub repository mohammed-tousif/Saans and signed-in Render; Codex preparing authorized free deployment. Secret scan passed for candidate files; no .env history. Deployment pending verification.
+
+
+## 25 November 2026 — clay frontend
+
+25 Nov redesign: node --check and git diff --check pass. Fixture sample create/compare/accept passed in browser. Desktop and mobile visual inspection at 1440x1000 and 390x844; mobile scroll width 375 versus viewport390. No captured browser error logs. Viewport reset. No hosted verification; Chrome disconnected.

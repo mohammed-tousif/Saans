@@ -10,7 +10,8 @@ class Settings(BaseSettings):
 
     # Gemini
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.8-flash"
+    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_backup_model: str = "gemini-3.5-flash-lite"
 
     # Server
     host: str = "0.0.0.0"

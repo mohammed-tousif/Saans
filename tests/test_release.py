@@ -24,12 +24,13 @@ def test_responses_are_not_cached_or_framed():
 @pytest.mark.asyncio
 async def test_valid_ai_selection_is_labelled_and_grounded(monkeypatch):
     monkeypatch.setattr(settings, 'gemini_api_key', 'test-placeholder')
-    async def selected(profile, context, eligible):
+    async def selected(profile, context, eligible, model):
         return [eligible[0]]
     monkeypatch.setattr(planner, '_select_with_gemini', selected)
     context = await FixtureProvider().fetch(28.6, 77.2, 'Fictional Delhi')
     plan = await planner.generate_plan(HouseholdProfile(city='delhi'), context)
     assert plan.generation_mode.value == 'ai'
+    assert plan.model_id == settings.gemini_model
     assert len(plan.actions) == 1
     assert plan.actions[0].evidence_ids
     assert plan.environmental_context.source_kind.value == 'fixture'

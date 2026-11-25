@@ -7,6 +7,7 @@ import json
 import logging
 import random
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import settings
@@ -18,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 def ai_failure_reason(error: Exception) -> str:
     """Return only allowlisted categories, never upstream text or credentials."""
-    import httpx
     code = getattr(error, "code", None)
     if isinstance(error, (TimeoutError, httpx.TimeoutException)):
         return "timeout"
@@ -34,12 +34,15 @@ def ai_failure_reason(error: Exception) -> str:
 
 
 async def select_with_retry(profile, context, eligible):
-    """One retry for transient failures, bounded by the caller's 25s deadline."""
-    for attempt in range(2):
+    """Use a second model on transient failure within the planning deadline."""
+    primary = settings.gemini_model
+    backup = settings.gemini_backup_model.strip() or primary
+    for attempt, model in enumerate((primary, backup)):
         try:
-            return await asyncio.wait_for(
-                _select_with_gemini(profile, context, eligible), timeout=10,
+            selected = await asyncio.wait_for(
+                _select_with_gemini(profile, context, eligible, model), timeout=10,
             )
+            return selected, model
         except Exception as error:
             reason = ai_failure_reason(error)
             if attempt or reason not in {"service_unavailable", "timeout", "rate_limited"}:
@@ -65,7 +68,7 @@ def validate_selection(selection: ActionSelection, eligible: list) -> list:
     return [records[aid] for aid in ids]
 
 
-def build_plan(profile, context, selected, ai=False):
+def build_plan(profile, context, selected, model_id=None):
     sources = load_sources()
     actions = []
     for record in selected:
@@ -83,7 +86,7 @@ def build_plan(profile, context, selected, ai=False):
     timeline.append({"period": "When feasible around your commitments", "actions": [a.title for a in actions],
                      "notes": "Suggestions are not appointments or predictions of cleaner hours."})
     warnings = ["Indoor conditions are not measured. This is planning guidance, not medical advice."]
-    if not ai:
+    if not model_id:
         warnings.append("AI planning unavailable — showing general guidance filtered by your inputs.")
     if context.is_stale:
         warnings.append("Environmental data is stale or its time is unknown; avoid treating it as current.")
@@ -92,14 +95,15 @@ def build_plan(profile, context, selected, ai=False):
     return PlanResponse(
         actions=actions, timeline=timeline,
         context_summary=f"{context.location_label}: practical options for your household. Check the data source and time below.",
-        warnings=warnings, generation_mode=PlanGenerationMode.AI if ai else PlanGenerationMode.FALLBACK,
-        model_id=settings.gemini_model if ai else None, source_time=context.observed_at,
+        warnings=warnings,
+        generation_mode=PlanGenerationMode.AI if model_id else PlanGenerationMode.FALLBACK,
+        model_id=model_id, source_time=context.observed_at,
         environmental_context=context, input_fingerprint=profile_fingerprint(profile),
         context_version="reviewed-actions-v2",
     )
 
 
-async def _select_with_gemini(profile, context, eligible):
+async def _select_with_gemini(profile, context, eligible, model):
     from google import genai
 
     # Build a minimal payload: only the fields the model needs for ranking.
@@ -138,11 +142,11 @@ async def _select_with_gemini(profile, context, eligible):
 
     # Keep the wire schema small; strict local validation is still mandatory.
     response_schema_dict = {
-        "type": "OBJECT",
+        "type": "object",
         "properties": {
             "action_ids": {
-                "type": "ARRAY",
-                "items": {"type": "STRING"},
+                "type": "array",
+                "items": {"type": "string"},
                 "minItems": 1,
                 "maxItems": 3,
             }
@@ -156,7 +160,7 @@ async def _select_with_gemini(profile, context, eligible):
     )
     async with genai.Client(api_key=settings.gemini_api_key, http_options=http_options).aio as client:
         response = await client.models.generate_content(
-            model=settings.gemini_model,
+            model=model,
             contents=json.dumps(payload, ensure_ascii=False),
             config=genai.types.GenerateContentConfig(
                 system_instruction=(
@@ -167,8 +171,10 @@ async def _select_with_gemini(profile, context, eligible):
                     "Return only action_ids from the provided list. Never invent IDs."
                 ),
                 response_mime_type="application/json",
-                response_schema=response_schema_dict,
-                max_output_tokens=256,
+                response_json_schema=response_schema_dict,
+                thinking_config=genai.types.ThinkingConfig(thinking_level="LOW")
+                if model.removeprefix("models/").startswith("gemini-3") else None,
+                max_output_tokens=512,
             ),
         )
         selection = ActionSelection.model_validate_json(response.text or "")
@@ -187,10 +193,10 @@ async def generate_plan(profile: HouseholdProfile, context: EnvironmentalContext
         selected[-1] = emission
     if settings.gemini_available and eligible:
         try:
-            selected = await asyncio.wait_for(
+            ranked, model_id = await asyncio.wait_for(
                 select_with_retry(profile, context, eligible), timeout=25,
             )
-            return build_plan(profile, context, selected, ai=True)
+            return build_plan(profile, context, ranked, model_id=model_id)
         except Exception as error:
             reason = ai_failure_reason(error)
             # Both log and UI use a closed category, not raw upstream text.

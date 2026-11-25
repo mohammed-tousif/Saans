@@ -11,10 +11,12 @@ from app.schemas import HouseholdProfile
 @pytest.mark.parametrize("recover", [True, False])
 async def test_transient_failure_retries_once_and_preserves_truth(monkeypatch, caplog, recover):
     monkeypatch.setattr(settings, "gemini_api_key", "test-placeholder")
+    monkeypatch.setattr(settings, "gemini_model", "gemini-3.8-flash")
+    monkeypatch.setattr(settings, "gemini_backup_model", "gemini-3.5-flash-lite")
     calls = []
 
-    async def select(profile, context, eligible):
-        calls.append(1)
+    async def select(profile, context, eligible, model):
+        calls.append(model)
         if recover and len(calls) == 2:
             return [eligible[0]]
         raise ServerError(503, {"error": {"message": "secret-upstream-detail"}})
@@ -26,8 +28,9 @@ async def test_transient_failure_retries_once_and_preserves_truth(monkeypatch, c
     monkeypatch.setattr(planner.asyncio, "sleep", no_delay)
     context = await FixtureProvider().fetch(28.6, 77.2, "Fictional Delhi")
     plan = await planner.generate_plan(HouseholdProfile(city="delhi"), context)
-    assert len(calls) == 2
+    assert calls == ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
     assert plan.generation_mode.value == ("ai" if recover else "fallback")
+    assert plan.model_id == ("gemini-3.5-flash-lite" if recover else None)
     assert all(action.evidence_ids for action in plan.actions)
     assert "secret-upstream-detail" not in plan.model_dump_json() + caplog.text
     if not recover:

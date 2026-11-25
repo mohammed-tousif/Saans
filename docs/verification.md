@@ -60,3 +60,13 @@ Code: explicit single SDK attempt, 10-second per-call deadline, one application 
 LinkedIn provided and verified by Chrome: https://www.linkedin.com/posts/mohammed-tousif-malekopp-4370792bb_buildwithai-promptwarsvirtual-challenge6-share-7531409733522534401-loH2/ . Visibility Global, all three hashtags, generated artwork; organizer handles are plain text, not linked mentions. User published it; Codex did not. Anonymous-access verification and actual build photo remain pending. Solo validity confirmed by user.
 
 Next: deploy and inspect recovery build on Render; verify a successful actual Gemini plan when upstream available; finish demo and remaining compliance gaps. No attempt consumed. No local server started/stopped.
+
+Recovery deployment verified: commit9b97827 pushed to master; Render marks it Live (35.1s build). Final hosted fictional request returned200 in14.77s, fallback, and new explicit Google service unavailable warning. Application-side recovery fix is deployed; successful real AI remains externally blocked. No claims of complete resolution. Initial pre-rollout request returned old generic warning; final result supersedes it. Next three tasks: verify Google recovery or a proven accessible alternative; finish product/demo gaps; correct LinkedIn real mentions/build image and final submission material. No submission attempted.
+
+## 25 November 2026 — Gemini backup verified locally (Codex)
+
+Active editor: Codex. Existing launch command is .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016. No local server started or stopped in this pass. The prior Render release still used reviewed fallback in a fresh live check. Direct structured requests returned 503 on 3.8 Flash via both generation endpoints. 3.5 Flash-Lite returned valid JSON. Patched planner tried the configured 3.8 Flash primary then used 3.5 Flash-Lite successfully in 3.67s using the local key, a fictional household and synthetic air context.
+
+The planner uses explicit JSON schema and low thinking for Gemini 3, keeps the deadline and validates selected IDs against eligible reviewed actions. A transient failure triggers one attempt with the configured backup. The response labels the model that actually produced the selection. New local default is Flash-Lite. Existing Render vars need no changes for the backup path. No secrets touched. 38 tests passed, lint and whitespace checks passed.
+
+Next three tasks: publish and verify Render AI plan and comparison, record the submission demo using verified behavior, and review the LinkedIn mentions and final submission links. No competition attempt used.

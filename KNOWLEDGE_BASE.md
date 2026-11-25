@@ -41,7 +41,7 @@ For implementation, use the [Antigravity master prompt](ANTIGRAVITY_MASTER_PROMP
 - Distinguishing feature: revise the plan when a real constraint changes, and explain the tradeoff.
 - Evidence is a product feature: every environmental reading has source, time, scale, and measurement/model status.
 - No invented health percentages, fake live data, indoor sensor readings, or street-level precision.
-- Dashboard deadline and Challenge 06-specific submission details remain unresolved.
+- Official deadline is 29 November 2026 at 23:59 IST. Full verified requirements and unresolved source conflicts are recorded in docs/compliance-audit.md (25 November).
 
 ## Next concrete milestone
 

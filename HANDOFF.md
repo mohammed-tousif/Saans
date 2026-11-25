@@ -1,5 +1,33 @@
 # Saans shared handoff
 
+## 25 November 2026 — Gemini outage diagnosis and recovery (Codex)
+
+Minimal direct REST request to configured gemini-3.8-flash returned HTTP503 UNAVAILABLE, explicitly high demand; excludes app schema as cause for that request. SDK request hit deadline. Listed alternative gemini-3.5-flash timed out; gemini-2.5-flash returned404 unavailable to new users. No model/env change. Local key may differ from Render; hosted logs separately confirmed ServerError. Upstream recovery is NOT proven.
+
+Code: explicit single SDK attempt, 10-second per-call deadline, one application retry with jitter for503/5xx,429,timeouts, outer25-second bound; permanent/invalid responses not retried. Removed deprecated temperature parameter per official troubleshooting docs. UI/logs use closed safe failure categories, never raw exception content. Tests:38 passed0.67s, including transient recovery, persistent outage, no retry on403/404/invalid selection, and timeout attempt limit. Official reference https://aistudio.google.com/docs/troubleshooting. This improves recovery/diagnostics; it cannot repair Google service capacity.
+
+LinkedIn provided and verified by Chrome: https://www.linkedin.com/posts/mohammed-tousif-malekopp-4370792bb_buildwithai-promptwarsvirtual-challenge6-share-7531409733522534401-loH2/ . Visibility Global, all three hashtags, generated artwork; organizer handles are plain text, not linked mentions. User published it; Codex did not. Anonymous-access verification and actual build photo remain pending. Solo validity confirmed by user.
+
+Next: deploy and inspect recovery build on Render; verify a successful actual Gemini plan when upstream available; finish demo and remaining compliance gaps. No attempt consumed. No local server started/stopped.
+
+## 25 November 2026 — hosted verification and social artwork (Codex)
+
+User confirms solo participation is valid and reports adding Gemini settings in Render and rebuilding. Chrome verified service srv-dc2sharncjis73dsf7gg on Free Docker, latest environment-triggered deploy dep-dc3hl4brjlhs73fsrua0 Live at commit 40dc19e. Public URL: https://saans-wwwc.onrender.com. App and city/source endpoints load; health logs show 200. Fictional school-parent plan returns real Open-Meteo/CAMS model data (European AQI labelled) and preserves school times. Gemini still fails: application log at 23:00:24 IST says AI selection unavailable: ServerError; UI honestly renders fallback. This proves deployment and live data, NOT successful AI. No secrets viewed or changed by Codex. No submission performed.
+
+Generated minimal PromptWars/Saans conceptual social graphic at output/social/saans-promptwars.png (~2.06 MB). Use alongside actual app/setup screenshot for event photo requirement; graphic is not an actual screenshot. No social post published. Video not recorded yet; real AI remains a blocker. Next: diagnose upstream AI failure without exposing secrets, complete product gaps, record compliant demo. Existing local process unchanged.
+
+## Current checkpoint — 25 November 2026 compliance review (Codex)
+
+Active editor: Codex for this completed audit; no concurrent editor. Read docs/compliance-audit.md first for current official rules and requirement-by-requirement findings. Chrome reconnected and full rules/linked guides were read. First attempt is NOT ready; portal showed 0/3 and no submission was made.
+
+Changes: added compliance audit, expanded README with required challenge/logic/operation/assumptions, corrected demo to under four minutes with live typed inputs, actual AI prompt/response and success/error cases; added social tags/photo instructions. Application code unchanged. GitHub Public verified; remote has only master at 40dc19e (clay redesign pushed). Preserve single-branch rule. New audit changes are local until explicitly recorded as pushed.
+
+Checks: fresh 32 tests passed in 0.47s. Source tree and git object inventory comfortably below 10 MB; final package recheck required. Prior fixture browser results are historical, not fresh hosted proof. No live AI or Render verification performed in this audit. Existing local fixture preview was previously PID 58256/session 59065 at http://127.0.0.1:8016; process not rechecked or changed here. Standard launch: .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016.
+
+Blockers: actual Gemini success; existing Render status/key/hosted checks; community usefulness and deeper personalization/impact explanation; broader accessibility/injection checks; real video and approved social narrative. Generic linked terms contain team/presentation/IP conditions whose applicability conflicts with event material; user/organizer clarification is needed. Do not claim perfect alignment, a predicted score or guaranteed first place.
+
+Next three tasks: (1) inspect existing Render service and resolve/prove real AI; (2) improve audit-listed product gaps with focused tests; (3) finish compliant video/narrative and clarify applicable rules before final user-reviewed attempt. Update all shared records after each chunk. No duplicate hosting service or fabricated evidence.
+
 ## Clay redesign — 25 November 2026 (Codex)
 
 User rejected original frontend and requested claymorphism. Codex replaced its presentation with ivory/sage/peach clay surfaces, CSS breathing sculpture, custom outline icons, desktop sidebar, mobile navigation, numbered two-column setup, prominent labelled air reading and expandable privacy details. Existing IDs/API behavior retained. New stylesheet app/static/clay.css layers over the base styles.

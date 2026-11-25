@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import random
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,6 +14,37 @@ from app.rules import filter_eligible_actions, load_sources
 from app.schemas import EnvironmentalContext, HouseholdProfile, PlanAction, PlanGenerationMode, PlanResponse
 
 logger = logging.getLogger(__name__)
+
+
+def ai_failure_reason(error: Exception) -> str:
+    """Return only allowlisted categories, never upstream text or credentials."""
+    import httpx
+    code = getattr(error, "code", None)
+    if isinstance(error, (TimeoutError, httpx.TimeoutException)):
+        return "timeout"
+    if code == 429:
+        return "rate_limited"
+    if code in (401, 403):
+        return "access_denied"
+    if code == 404:
+        return "model_unavailable"
+    if isinstance(code, int) and 500 <= code <= 599:
+        return "service_unavailable"
+    return "invalid_response"
+
+
+async def select_with_retry(profile, context, eligible):
+    """One retry for transient failures, bounded by the caller's 25s deadline."""
+    for attempt in range(2):
+        try:
+            return await asyncio.wait_for(
+                _select_with_gemini(profile, context, eligible), timeout=10,
+            )
+        except Exception as error:
+            reason = ai_failure_reason(error)
+            if attempt or reason not in {"service_unavailable", "timeout", "rate_limited"}:
+                raise
+            await asyncio.sleep(0.5 + random.random() * 0.5)
 
 
 class ActionSelection(BaseModel):
@@ -104,8 +136,7 @@ async def _select_with_gemini(profile, context, eligible):
         ],
     }
 
-    # Use a plain dict schema: Pydantic ConfigDict(extra="forbid") adds
-    # "additionalProperties": false which the Gemini API rejects (HTTP 400).
+    # Keep the wire schema small; strict local validation is still mandatory.
     response_schema_dict = {
         "type": "OBJECT",
         "properties": {
@@ -119,7 +150,11 @@ async def _select_with_gemini(profile, context, eligible):
         "required": ["action_ids"],
     }
 
-    async with genai.Client(api_key=settings.gemini_api_key).aio as client:
+    # Own retries here so SDK defaults cannot consume the entire UI deadline.
+    http_options = genai.types.HttpOptions(
+        timeout=10000, retry_options=genai.types.HttpRetryOptions(attempts=1),
+    )
+    async with genai.Client(api_key=settings.gemini_api_key, http_options=http_options).aio as client:
         response = await client.models.generate_content(
             model=settings.gemini_model,
             contents=json.dumps(payload, ensure_ascii=False),
@@ -133,7 +168,6 @@ async def _select_with_gemini(profile, context, eligible):
                 ),
                 response_mime_type="application/json",
                 response_schema=response_schema_dict,
-                temperature=0.2,
                 max_output_tokens=256,
             ),
         )
@@ -154,10 +188,22 @@ async def generate_plan(profile: HouseholdProfile, context: EnvironmentalContext
     if settings.gemini_available and eligible:
         try:
             selected = await asyncio.wait_for(
-                _select_with_gemini(profile, context, eligible), timeout=25,
+                select_with_retry(profile, context, eligible), timeout=25,
             )
             return build_plan(profile, context, selected, ai=True)
         except Exception as error:
-            # Log only the error type: upstream text can contain credentials or user content.
-            logger.warning("AI selection unavailable: %s", type(error).__name__)
+            reason = ai_failure_reason(error)
+            # Both log and UI use a closed category, not raw upstream text.
+            logger.warning("AI selection unavailable: %s", reason)
+            plan = build_plan(profile, context, selected)
+            messages = {
+                "service_unavailable": "Google's AI service is temporarily unavailable. Please try again later.",
+                "timeout": "The AI service took too long to respond. Please try again later.",
+                "rate_limited": "The AI service's request allowance is currently exhausted. Please try again later.",
+                "access_denied": "AI access needs attention from the app operator.",
+                "model_unavailable": "The configured AI model is unavailable to this app.",
+                "invalid_response": "The AI response could not be safely used.",
+            }
+            plan.warnings.append(messages[reason])
+            return plan
     return build_plan(profile, context, selected)

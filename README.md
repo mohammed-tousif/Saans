@@ -2,6 +2,22 @@
 
 Local prototype of a household air-quality planner. Python/FastAPI serves a same-origin web interface. Gemini ranks eligible actions; source-backed text and schedule commitments are rendered by code. Missing AI credentials produce explicitly labelled fallback guidance.
 
+## Challenge and approach
+
+Chosen vertical: **PromptWars Challenge 06 — Urban Air Quality Assistant**. Saans helps an urban household choose practical indoor-air and lower-emission actions around daily commitments. The current implementation focuses on households; shared community coordination is not implemented.
+
+The user selects a city, budget, transport, household resources and routine. The provider normalizes city-level air data, including its source, timestamp and index scale. Deterministic rules remove actions that conflict with resources, budget or constraints. Gemini ranks up to three remaining action IDs; the server rejects unknown, repeated or malformed choices. Reviewed catalogue text supplies explanations, limitations and source links. If AI fails, the interface explicitly labels the rule-filtered fallback.
+
+The user can change a typed constraint, compare against the saved original plan, and accept the revision. Fixed routine times remain unchanged. Environmental data quality and AI availability are separate states.
+
+## Assumptions
+
+- Open-Meteo/CAMS Global provides regional model data, approximately 45 km resolution, not street-level observations. European AQI is labelled explicitly; it is not India's AQI.
+- Household resource and budget selections are self-reported. Indoor pollution, route conditions and equipment effectiveness are not measured.
+- Guidance explains qualitative possibilities and tradeoffs, not measured health gains or calculated emissions savings. It does not replace medical advice.
+- Routine labels/times and additional notes are not sent to Gemini. A reduced summary includes city, resources, budget, transport and household-needs categories. Temporary server snapshots support comparison; the UI discloses this data use.
+- This is a single-worker prototype. A working fallback is not proof of successful GenAI. See [current compliance audit](docs/compliance-audit.md) for unresolved release gates and official rules.
+
 ## Start on Windows
 
 From this folder, use the existing environment:

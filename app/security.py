@@ -1,5 +1,8 @@
 """Bound request bodies before parsing and protect same-origin responses."""
 
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
 # Strict policy: no inline scripts, styles or handlers; only same-origin API calls.
 # Google Fonts is the single third-party origin (stylesheet + font files).
 CONTENT_SECURITY_POLICY = (
@@ -13,7 +16,7 @@ CONTENT_SECURITY_POLICY = (
 DOCS_PREFIXES = ("/docs", "/redoc")
 
 
-def security_headers(scope) -> list[tuple[bytes, bytes]]:
+def security_headers(scope: Scope) -> list[tuple[bytes, bytes]]:
     """Headers added to every response; static assets may be revalidated via ETag."""
     path = scope.get("path", "")
     cache = b"no-cache" if path.startswith("/static/") else b"no-store"
@@ -33,54 +36,67 @@ def security_headers(scope) -> list[tuple[bytes, bytes]]:
     return headers
 
 
+class RequestBodyTooLargeError(Exception):
+    """The incoming body exceeded the configured byte limit."""
+
+
+async def _read_body(receive: Receive, max_bytes: int) -> bytes | None:
+    """Read a bounded ASGI body. A disconnect means there is no response to send."""
+    body = bytearray()
+    while True:
+        message = await receive()
+        if message["type"] == "http.disconnect":
+            return None
+        chunk = message.get("body", b"")
+        if len(body) + len(chunk) > max_bytes:
+            raise RequestBodyTooLargeError
+        body.extend(chunk)
+        if not message.get("more_body", False):
+            return bytes(body)
+
+
+def _replay_body(body: bytes, receive: Receive) -> Receive:
+    pending: bytes | None = body
+
+    async def replay() -> Message:
+        nonlocal pending
+        if pending is None:
+            return await receive()
+        message = {"type": "http.request", "body": pending, "more_body": False}
+        pending = None
+        return message
+
+    return replay
+
+
 class RequestGuards:
-    def __init__(self, app, max_bytes=32768):
+    def __init__(self, app: ASGIApp, max_bytes: int = 32_768) -> None:
         self.app = app
         self.max_bytes = max_bytes
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
-            return await self.app(scope, receive, send)
+            await self.app(scope, receive, send)
+            return
 
-        async def protected_send(message):
+        async def protected_send(message: Message) -> None:
             if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
-                headers.extend(security_headers(scope))
+                headers = [*message.get("headers", []), *security_headers(scope)]
                 message = {**message, "headers": headers}
             await send(message)
 
-        if scope["method"] in ("POST", "PUT", "PATCH"):
-            body = bytearray()
-            while True:
-                message = await receive()
-                if message["type"] == "http.disconnect":
-                    return
-                body.extend(message.get("body", b""))
-                if len(body) > self.max_bytes:
-                    await protected_send(
-                        {
-                            "type": "http.response.start",
-                            "status": 413,
-                            "headers": [(b"content-type", b"application/json")],
-                        }
-                    )
-                    await send(
-                        {
-                            "type": "http.response.body",
-                            "body": b'{"detail":"Request too large (maximum 32 KiB)."}',
-                        }
-                    )
-                    return
-                if not message.get("more_body", False):
-                    break
-            delivered = False
+        if scope["method"] in {"POST", "PUT", "PATCH"}:
+            try:
+                body = await _read_body(receive, self.max_bytes)
+            except RequestBodyTooLargeError:
+                response = JSONResponse(
+                    {"detail": f"Request too large (maximum {self.max_bytes:,} bytes)."},
+                    status_code=413,
+                )
+                await response(scope, receive, protected_send)
+                return
+            if body is None:
+                return
+            receive = _replay_body(body, receive)
 
-            async def replay():
-                nonlocal delivered
-                if not delivered:
-                    delivered = True
-                    return {"type": "http.request", "body": bytes(body), "more_body": False}
-                return await receive()
-
-            return await self.app(scope, replay, protected_send)
         await self.app(scope, receive, protected_send)

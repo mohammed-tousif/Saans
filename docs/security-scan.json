@@ -1,6 +1,6 @@
 {
   "scan_path": "app",
-  "files_scanned": 10,
+  "files_scanned": 14,
   "passed": true,
   "counts": {
     "medium": 1
@@ -11,7 +11,7 @@
       "category": "加密",
       "message": "使用不安全的随机数生成器",
       "file_path": "app/planner.py",
-      "line_number": 82,
+      "line_number": 87,
       "line_content": "await asyncio.sleep(0.5 + random.random() * 0.5)",
       "recommendation": "安全场景使用 secrets 模块"
     }

@@ -15,6 +15,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.config import settings
 from app.rules import filter_eligible_actions, load_sources
 from app.schemas import (
+    ActionPurpose,
+    ActionRecord,
+    DataSourceKind,
     EnvironmentalContext,
     HouseholdProfile,
     PlanAction,
@@ -62,7 +65,9 @@ def reset_model_cooldown() -> None:
     _primary_cooldown_until = 0.0
 
 
-async def select_with_retry(profile, context, eligible):
+async def select_with_retry(
+    profile: HouseholdProfile, context: EnvironmentalContext, eligible: list[ActionRecord]
+) -> tuple[list[ActionRecord], str]:
     """Use a second model on transient failure within the planning deadline."""
     global _primary_cooldown_until
     models = model_order()
@@ -80,6 +85,7 @@ async def select_with_retry(profile, context, eligible):
             if attempt or not transient:
                 raise
             await asyncio.sleep(0.5 + random.random() * 0.5)
+    raise AssertionError("Model ordering must contain at least one entry")
 
 
 class ActionSelection(BaseModel):
@@ -92,7 +98,9 @@ def profile_fingerprint(profile: HouseholdProfile) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def validate_selection(selection: ActionSelection, eligible: list) -> list:
+def validate_selection(
+    selection: ActionSelection, eligible: list[ActionRecord]
+) -> list[ActionRecord]:
     records = {a.id: a for a in eligible}
     ids = selection.action_ids
     if len(set(ids)) != len(ids) or any(aid not in records for aid in ids):
@@ -100,7 +108,12 @@ def validate_selection(selection: ActionSelection, eligible: list) -> list:
     return [records[aid] for aid in ids]
 
 
-def build_plan(profile, context, selected, model_id=None):
+def build_plan(
+    profile: HouseholdProfile,
+    context: EnvironmentalContext,
+    selected: list[ActionRecord],
+    model_id: str | None = None,
+) -> PlanResponse:
     sources = load_sources()
     actions = []
     for record in selected:
@@ -147,7 +160,7 @@ def build_plan(profile, context, selected, model_id=None):
         warnings.append(
             "Environmental data is stale or its time is unknown; avoid treating it as current."
         )
-    if context.source_kind.value == "fixture":
+    if context.source_kind == DataSourceKind.FIXTURE:
         warnings.append("Environmental values are synthetic test data.")
     return PlanResponse(
         actions=actions,
@@ -166,7 +179,12 @@ def build_plan(profile, context, selected, model_id=None):
     )
 
 
-async def _select_with_gemini(profile, context, eligible, model):
+async def _select_with_gemini(
+    profile: HouseholdProfile,
+    context: EnvironmentalContext,
+    eligible: list[ActionRecord],
+    model: str,
+) -> list[ActionRecord]:
     from google import genai
 
     # Build a minimal payload: only the fields the model needs for ranking.
@@ -238,7 +256,9 @@ async def _select_with_gemini(profile, context, eligible, model):
                 ),
                 response_mime_type="application/json",
                 response_json_schema=response_schema_dict,
-                thinking_config=genai.types.ThinkingConfig(thinking_level="LOW")
+                thinking_config=genai.types.ThinkingConfig(
+                    thinking_level=genai.types.ThinkingLevel.LOW
+                )
                 if model.removeprefix("models/").startswith("gemini-3")
                 else None,
                 max_output_tokens=512,
@@ -248,42 +268,48 @@ async def _select_with_gemini(profile, context, eligible, model):
         return validate_selection(selection, eligible)
 
 
-async def generate_plan(
-    profile: HouseholdProfile, context: EnvironmentalContext, constraint_changes=None
-) -> PlanResponse:
-    if constraint_changes:
-        raise ValueError("Use the typed comparison endpoint for changes")
-    eligible = filter_eligible_actions(profile, context)
+FALLBACK_MESSAGES = {
+    "service_unavailable": (
+        "Google's AI service is temporarily unavailable. Please try again later."
+    ),
+    "timeout": "The AI service took too long to respond. Please try again later.",
+    "rate_limited": (
+        "The AI service's request allowance is currently exhausted. Please try again later."
+    ),
+    "access_denied": "AI access needs attention from the app operator.",
+    "model_unavailable": "The configured AI model is unavailable to this app.",
+    "invalid_response": "The AI response could not be safely used.",
+}
+
+
+def _fallback_actions(eligible: list[ActionRecord]) -> list[ActionRecord]:
     selected = eligible[:3]
-    # Include an emissions option in the rule-based selection when feasible.
-    emission = next((a for a in eligible if a.purpose.value == "emissions"), None)
-    if emission and selected and all(a.purpose.value != "emissions" for a in selected):
+    if not selected or any(action.purpose == ActionPurpose.EMISSIONS for action in selected):
+        return selected
+    emission = next(
+        (action for action in eligible if action.purpose == ActionPurpose.EMISSIONS), None
+    )
+    if emission:
         selected[-1] = emission
-    if settings.gemini_available and eligible:
-        try:
-            ranked, model_id = await asyncio.wait_for(
-                select_with_retry(profile, context, eligible),
-                timeout=25,
-            )
-            return build_plan(profile, context, ranked, model_id=model_id)
-        except Exception as error:
-            reason = ai_failure_reason(error)
-            # Both log and UI use a closed category, not raw upstream text.
-            logger.warning("AI selection unavailable: %s", reason)
-            plan = build_plan(profile, context, selected)
-            messages = {
-                "service_unavailable": (
-                    "Google's AI service is temporarily unavailable. Please try again later."
-                ),
-                "timeout": "The AI service took too long to respond. Please try again later.",
-                "rate_limited": (
-                    "The AI service's request allowance is currently exhausted. "
-                    "Please try again later."
-                ),
-                "access_denied": "AI access needs attention from the app operator.",
-                "model_unavailable": "The configured AI model is unavailable to this app.",
-                "invalid_response": "The AI response could not be safely used.",
-            }
-            plan.warnings.append(messages[reason])
-            return plan
-    return build_plan(profile, context, selected)
+    return selected
+
+
+async def generate_plan(profile: HouseholdProfile, context: EnvironmentalContext) -> PlanResponse:
+    eligible = filter_eligible_actions(profile, context)
+    if not settings.gemini_available or not eligible:
+        return build_plan(profile, context, _fallback_actions(eligible))
+
+    try:
+        ranked, model_id = await asyncio.wait_for(
+            select_with_retry(profile, context, eligible),
+            timeout=25,
+        )
+    except Exception as error:
+        reason = ai_failure_reason(error)
+        # The upstream message may contain private details, so keep only its category.
+        logger.warning("AI selection unavailable: %s", reason)
+        plan = build_plan(profile, context, _fallback_actions(eligible))
+        plan.warnings.append(FALLBACK_MESSAGES[reason])
+        return plan
+
+    return build_plan(profile, context, ranked, model_id=model_id)

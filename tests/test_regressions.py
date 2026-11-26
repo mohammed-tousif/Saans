@@ -66,6 +66,42 @@ def test_unknown_units_and_missing_data_are_not_zero():
     assert context.pollutants == [] and context.index_value is None
 
 
+@pytest.mark.parametrize("unit", [None, 42, ["µg/m³"]])
+def test_malformed_unit_does_not_discard_the_rest_of_the_reading(unit):
+    data = provider_data()
+    data["current_units"]["pm2_5"] = unit
+    data["current"].update(pm10=21)
+    data["current_units"]["pm10"] = "µg/m³"
+    context = parse(data)
+    assert [(pollutant.name, pollutant.value) for pollutant in context.pollutants] == [("PM10", 21)]
+    assert context.index_value == 25
+    assert "unknown_unit_pm2_5" in context.quality_flags
+
+
+def test_malformed_provider_coordinates_use_requested_location():
+    data = {**provider_data(), "latitude": None, "longitude": 900}
+    context = parse(data)
+    assert (context.latitude, context.longitude) == (28.6, 77.2)
+    assert context.index_value == 25
+
+
+def test_eligibility_combines_catalogue_conditions_and_user_needs():
+    context = parse(provider_data())
+    profile = HouseholdProfile(
+        city="delhi", budget_band="moderate", has_children=True, has_purifier=True
+    )
+
+    def eligible_ids():
+        return [action.id for action in filter_eligible_actions(profile, context)]
+
+    assert eligible_ids() == ["ACT001", "ACT003", "ACT015", "ACT007", "ACT004", "ACT002"]
+    profile.has_mobility_limitation = True
+    profile.flexibility_minutes = 0
+    assert eligible_ids() == ["ACT001", "ACT007", "ACT002"]
+    context.is_stale = True
+    assert eligible_ids() == ["ACT001", "ACT007"]
+
+
 @pytest.mark.parametrize("data", [[], None, {}, {"current": []}])
 def test_malformed_provider_envelopes(data):
     with pytest.raises(ProviderError):

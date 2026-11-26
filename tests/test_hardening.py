@@ -50,7 +50,7 @@ def test_hsts_only_behind_https():
 # --- CSP-compatible frontend ------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["index.html", "app.js"])
+@pytest.mark.parametrize("name", ["index.html", *sorted(path.name for path in STATIC.glob("*.js"))])
 def test_frontend_has_no_inline_handlers_or_style_attributes(name):
     source = (STATIC / name).read_text(encoding="utf-8")
     assert not re.search(r"\son[a-z]+\s*=\s*[\"']", source), "inline event handler"

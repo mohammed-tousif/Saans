@@ -1,7 +1,4 @@
-"""Provider adapters for environmental data.
-
-Base class and Open-Meteo CAMS implementation.
-"""
+"""Normalize live CAMS and synthetic fixture data into the same schema."""
 
 from __future__ import annotations
 
@@ -17,10 +14,101 @@ from app.schemas import DataSourceKind, EnvironmentalContext, Pollutant
 logger = logging.getLogger(__name__)
 
 
+POLLUTANT_NAMES = {
+    "pm2_5": "PM2.5",
+    "pm10": "PM10",
+    "nitrogen_dioxide": "NO₂",
+    "ozone": "O₃",
+    "sulphur_dioxide": "SO₂",
+    "carbon_monoxide": "CO",
+}
+POLLUTANT_UNIT = "µg/m³"
+MAX_DATA_AGE = timedelta(hours=3)
+MAX_FUTURE_DRIFT = timedelta(hours=1)
+
+
+def _finite_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _nonnegative_number(value: object) -> float | None:
+    number = _finite_number(value)
+    return number if number is not None and number >= 0 else None
+
+
+def _coordinate(value: object, fallback: float, *, limit: int) -> float:
+    number = _finite_number(value)
+    return number if number is not None and abs(number) <= limit else fallback
+
+
+def _parse_observed_at(value: object, utc_offset: object) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        observed_at = datetime.fromisoformat(value)
+        if observed_at.tzinfo is None:
+            # CAMS returns local wall time. It is usable only with the matching offset.
+            seconds = _finite_number(utc_offset)
+            if seconds is None:
+                return None
+            observed_at = observed_at.replace(tzinfo=timezone(timedelta(seconds=seconds)))
+        return observed_at.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        logger.warning("Could not parse Open-Meteo observation time")
+        return None
+
+
+def _is_stale(observed_at: datetime | None, retrieved_at: datetime) -> bool:
+    if observed_at is None:
+        return True
+    age = retrieved_at - observed_at
+    return not -MAX_FUTURE_DRIFT <= age <= MAX_DATA_AGE
+
+
+def _parse_pollutants(
+    current: dict[str, object], units: dict[str, object]
+) -> tuple[list[Pollutant], list[str]]:
+    pollutants = []
+    flags = []
+    for field, name in POLLUTANT_NAMES.items():
+        value = current.get(field)
+        if value is None:
+            continue
+        number = _nonnegative_number(value)
+        if number is None:
+            flags.append(f"invalid_{field}")
+            continue
+        unit = units.get(field)
+        if not isinstance(unit, str) or unit.replace("μ", "µ") != POLLUTANT_UNIT:
+            flags.append(f"unknown_unit_{field}")
+            continue
+        pollutants.append(
+            Pollutant(
+                name=name,
+                value=number,
+                unit=POLLUTANT_UNIT,
+                averaging_period="model current timestep",
+            )
+        )
+    return pollutants, flags
+
+
+def _parse_index(current: dict[str, object], flags: list[str]) -> float | None:
+    value = current.get("european_aqi")
+    index = _nonnegative_number(value)
+    if value is not None and index is None:
+        flags.append("invalid_index")
+    return index
+
+
 class ProviderError(Exception):
     """Raised when a data provider fails."""
-
-    pass
 
 
 class BaseProvider(abc.ABC):
@@ -59,12 +147,12 @@ class OpenMeteoProvider(BaseProvider):
         "european_aqi_sulphur_dioxide",
     ]
 
-    def __init__(self, timeout: int = 10):
+    def __init__(self, timeout: int = 10) -> None:
         self.timeout = timeout
 
     async def fetch(self, latitude: float, longitude: float, label: str) -> EnvironmentalContext:
         """Fetch current air quality from Open-Meteo."""
-        params = {
+        params: dict[str, str | float] = {
             "latitude": latitude,
             "longitude": longitude,
             "current": ",".join(self.HOURLY_VARS),
@@ -79,152 +167,83 @@ class OpenMeteoProvider(BaseProvider):
                 response = await client.get(self.BASE_URL, params=params)
                 response.raise_for_status()
                 data = response.json()
-        except httpx.TimeoutException:
-            raise ProviderError(f"Open-Meteo request timed out after {self.timeout}s")
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
-                raise ProviderError("Open-Meteo rate limit exceeded. Please try again later.")
-            raise ProviderError(f"Open-Meteo returned HTTP {e.response.status_code}")
-        except httpx.RequestError as e:
-            raise ProviderError("Open-Meteo request failed") from e
-        except ValueError as e:
-            raise ProviderError("Open-Meteo returned malformed JSON") from e
+        except httpx.TimeoutException as error:
+            raise ProviderError(f"Open-Meteo request timed out after {self.timeout}s") from error
+        except httpx.HTTPStatusError as error:
+            status = error.response.status_code
+            if status == 429:
+                raise ProviderError(
+                    "Open-Meteo rate limit exceeded. Please try again later."
+                ) from error
+            raise ProviderError(f"Open-Meteo returned HTTP {status}") from error
+        except httpx.RequestError as error:
+            raise ProviderError("Open-Meteo request failed") from error
+        except ValueError as error:
+            raise ProviderError("Open-Meteo returned malformed JSON") from error
 
         return self._parse_response(data, latitude, longitude, label, retrieved_at)
 
     def _parse_response(
         self,
-        data: dict,
+        data: object,
         latitude: float,
         longitude: float,
         label: str,
         retrieved_at: datetime,
     ) -> EnvironmentalContext:
-        """Parse Open-Meteo response into normalized environmental context."""
+        """Normalize a provider payload and preserve its data quality flags."""
         if not isinstance(data, dict):
             raise ProviderError("Invalid provider response")
-        current = data.get("current", {})
-
+        current = data.get("current")
         if not isinstance(current, dict) or not current:
             raise ProviderError("Open-Meteo returned empty current data")
 
-        # Parse observation time from the response
-        time_str = current.get("time", "")
-        observed_at = None
-        if time_str:
-            try:
-                # Open-Meteo returns ISO format without timezone (local time per request)
-                observed_at = datetime.fromisoformat(time_str)
-                if observed_at.tzinfo is None:
-                    offset = data.get("utc_offset_seconds")
-                    if isinstance(offset, bool) or not isinstance(offset, (int, float)):
-                        raise ValueError("Missing UTC offset")
-                    observed_at = observed_at.replace(tzinfo=timezone(timedelta(seconds=offset)))
-                observed_at = observed_at.astimezone(timezone.utc)
-            except (ValueError, TypeError, OverflowError):
-                observed_at = None
-                logger.warning(f"Could not parse Open-Meteo time: {time_str}")
-
-        # Build pollutant list from available data
-        pollutants = []
-        quality_flags = []
-        units = data.get("current_units", {})
-        if not isinstance(units, dict):
-            units = {}
-        pollutant_map = {
-            "pm2_5": ("PM2.5", "µg/m³"),
-            "pm10": ("PM10", "µg/m³"),
-            "nitrogen_dioxide": ("NO₂", "µg/m³"),
-            "ozone": ("O₃", "µg/m³"),
-            "sulphur_dioxide": ("SO₂", "µg/m³"),
-            "carbon_monoxide": ("CO", "µg/m³"),
-        }
-
-        for field, (name, unit) in pollutant_map.items():
-            value = current.get(field)
-            if value is not None:
-                if (
-                    isinstance(value, bool)
-                    or not isinstance(value, (int, float))
-                    or not math.isfinite(value)
-                    or value < 0
-                ):
-                    quality_flags.append(f"invalid_{field}")
-                    continue
-                if units.get(field, "").replace("μ", "µ") != unit:
-                    quality_flags.append(f"unknown_unit_{field}")
-                    continue
-                pollutants.append(
-                    Pollutant(
-                        name=name,
-                        value=float(value),
-                        unit=unit,
-                        averaging_period="model current timestep",
-                    )
-                )
-
-        # European AQI from Open-Meteo (do NOT relabel as Indian AQI)
-        european_aqi = current.get("european_aqi")
-        if european_aqi is not None and (
-            isinstance(european_aqi, bool)
-            or not isinstance(european_aqi, (int, float))
-            or not math.isfinite(european_aqi)
-            or european_aqi < 0
-        ):
-            quality_flags.append("invalid_index")
-            european_aqi = None
-        category = None
-        if european_aqi is not None:
-            category = self._european_aqi_category(european_aqi)
-
-        # Check staleness — model data valid for a few hours
-        is_stale = observed_at is None
-        if observed_at:
-            age_hours = (retrieved_at - observed_at).total_seconds() / 3600
-            is_stale = age_hours > 3 or age_hours < -1
-
+        units = data.get("current_units")
+        pollutants, flags = _parse_pollutants(current, units if isinstance(units, dict) else {})
+        index = _parse_index(current, flags)
+        observed_at = _parse_observed_at(current.get("time"), data.get("utc_offset_seconds"))
+        is_stale = _is_stale(observed_at, retrieved_at)
         if observed_at is None:
-            quality_flags.append("unknown_data_time")
+            flags.append("unknown_data_time")
         if is_stale:
-            quality_flags.append("stale_data")
+            flags.append("stale_data")
         if not pollutants:
-            quality_flags.append("no_pollutant_data")
+            flags.append("no_pollutant_data")
 
         return EnvironmentalContext(
             provider="Open-Meteo (CAMS)",
             source_url=self.SOURCE_URL,
             source_kind=DataSourceKind.MODEL,
             location_label=label,
-            latitude=data.get("latitude", latitude),
-            longitude=data.get("longitude", longitude),
-            spatial_resolution_km=45.0,  # Explicit global domain
+            latitude=_coordinate(data.get("latitude"), latitude, limit=90),
+            longitude=_coordinate(data.get("longitude"), longitude, limit=180),
+            spatial_resolution_km=45.0,
             observed_at=observed_at,
             retrieved_at=retrieved_at,
             timezone="Asia/Kolkata",
-            index_system="European AQI" if european_aqi is not None else None,
-            index_value=float(european_aqi) if european_aqi is not None else None,
-            category=category,
+            index_system="European AQI" if index is not None else None,
+            index_value=index,
+            category=self._european_aqi_category(index) if index is not None else None,
             pollutants=pollutants,
-            quality_flags=quality_flags,
+            quality_flags=flags,
             is_stale=is_stale,
             attribution=self.ATTRIBUTION,
         )
 
     @staticmethod
-    def _european_aqi_category(value: int) -> str:
+    def _european_aqi_category(value: float) -> str:
         """European AQI category labels. NOT Indian AQI."""
         if value <= 20:
             return "Good"
-        elif value <= 40:
+        if value <= 40:
             return "Fair"
-        elif value <= 60:
+        if value <= 60:
             return "Moderate"
-        elif value <= 80:
+        if value <= 80:
             return "Poor"
-        elif value <= 100:
+        if value <= 100:
             return "Very Poor"
-        else:
-            return "Extremely Poor"
+        return "Extremely Poor"
 
 
 class FixtureProvider(BaseProvider):

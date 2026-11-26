@@ -154,3 +154,43 @@ Active editor: Codex for this pass. Latest inherited release already contained s
 Local verification before final rerun: 51 backend tests, 82% combined statement/branch coverage, 2 Node unit tests, 4 Chromium tests. Chromium verified keyboard navigation, evidence focus, literal commitment text, comparison/acceptance, invalid-time error, and zero axe violations on setup, today, home, sources and comparison at widths 1280px and 390px. Earlier contrast runs measured the page mid-fade. The current suite waits for finite animations and fonts. Security scan has zero high/critical findings and one medium pattern for non-security retry jitter. Added coverage and browser checks to CI; expanded README evidence. No submission action taken.
 
 Next three tasks: validate the final local build and publish safely, verify Render and CI on the new commit, and hand the reviewed form values to the user for attempt one. Uploaded demo remains https://youtu.be/KyVVyveKvt8. LinkedIn mentions were verified by Claude, and the real build photo still needs placement or organizer clarification.
+
+## 26 November 2026 — pre-attempt build verified on Render and CI (Codex)
+
+Commit 8f9c8a5 was pushed to master. Render served app.js byte-for-byte from that commit, the homepage returned 200 with the strict CSP, and a new fictional Delhi plan returned 200 in AI mode using gemini-3.5-flash-lite with live CAMS model context. GitHub CI completed successfully for that exact commit including coverage and Chromium: https://github.com/mohammed-tousif/Saans/actions/runs/45841908598. Tracked tree 838,124 bytes; packed history measured 8,933,179 bytes (below 10 MB). Keep video and screen captures out of Git. Final local verification: 51 backend tests (82% coverage), two Node unit tests, four Chromium tests including 10 axe view/viewport scans, Ruff and whitespace passed. No HTML-string sinks found in the product frontend. Local fixture server 8019 was started and stopped by Playwright.
+
+The submission kit's 781-character changes field now describes the live app and verified checks. Demo https://youtu.be/KyVVyveKvt8 already published by Claude. Real build screenshot available at output/demo/saans-live-plan.png. Live AI internals were tested through the API on this deployment; full DOM journey validated locally with fixtures. No competition attempt taken by Codex. Last signed-in counter was 0/3, as verified earlier on 26 Nov by Claude.
+
+Next three tasks: address the real LinkedIn build image per the organizer's guidance; user reviews the form and makes attempt one; inspect feedback and use the second attempt only after targeted fixes.
+
+## 26 November 2026 — first-attempt form prepared as-is (Codex)
+
+User chose the current release, demo and existing LinkedIn post. Do not edit the post or add an image as part of this attempt. Codex filled all seven fields in signed-in Chrome for Challenge 6, using the existing public repository, live app, unlisted video, existing LinkedIn post, 781-character changes and 716-character GenAI answers. All values matched and Submit was enabled. The counter showed 0/3 and the deadline displayed 29 November 2026 at 23:59 IST. The form was left open for the user's final Submit action. No attempt consumed by Codex.
+
+The portal says AI evaluates the code against six criteria. It still marks the deployment, video and LinkedIn fields required. The organizer's build-photo guidance remains a separate consideration. No code, deployment, post or server process changed.
+
+Next three tasks: user reviews and presses Submit; record the resulting attempt count and feedback; make targeted fixes only if the feedback warrants another attempt.
+
+
+## 26 November 2026 — attempt 1 submitted (Claude Code)
+The user's own words asked for any corrections and then submission. Before submitting, Claude Code checked that commit 8f9c8a5 (Codex: HTML rendering sinks removed, browser tests added) is on origin master and live on Render. CI passed and its log confirms 51 backend tests, 2 Node unit tests, 82% backend coverage and 4 Chromium tests. The form was blank (0/3). Claude Code filled all seven fields with the user's supplied values in the signed-in Chrome and read them back: every value matched exactly, changes 781/1024, GenAI 641/1024, LinkedIn post unchanged. No corrections were needed. Submit opened a dialog requiring agreement to a plagiarism check (disqualification if plagiarism is found). Claude Code paused, and the user explicitly said "Yes, agree and submit". Claude Code ticked the box and submitted. The portal showed "Submission submitted successfully!" (attempt 1), and the counter is now **1/3** with Attempt 1 Analyzing. The rank shown before submitting was #716/56290 (it doesn't yet reflect this attempt). Next three tasks: read the attempt 1 score and AI feedback once analysis finishes; fix exactly what the feedback names, with tests, and redeploy; use attempt 2 only after the fixes are verified live, and keep attempt 3 in reserve (closes 29 Nov 23:59 IST).
+
+## 26 November 2026 — attempt one score verified (Codex)
+
+The user supplied the score screenshot. Signed-in Hack2skill verified 1/3 attempts used, attempt 1 score 95.72/100 and current displayed rank #465 / 56,543. Category scores: Code Quality 86, Security 98, Efficiency 100, Testing 96, Accessibility 99, Problem Statement Alignment 99. Rank is a point-in-time dashboard value. The attempt and Code Quality controls exposed no written evaluator findings. The feedback panel asks the entrant to rate the evaluation. It does not diagnose the score.
+
+Submitted baseline: 8f9c8a5 (per Claude Code's submission record). Codex inspected the source without changing it. Existing Ruff checks pass. A separate C90 check found complexity 29 in app/rules.py filter_eligible_actions, 18 in app/providers.py _parse_response and 11 in app/security.py RequestGuards.__call__. app/static/app.js is 856 lines and owns state, requests and rendering. These are independent maintainability findings, not known reasons for the score. Prioritize the rules and provider complexity before considering a frontend split, and preserve the existing behavior with regression tests. No new submission, push, app edit or server process.
+
+Next three tasks: choose a narrow maintainability pass based on verified findings, run the full regression suite and verify a candidate live, and decide whether to spend attempt two. Preserve attempt three. Submission closes 29 November 2026 at 23:59 IST.
+
+## 26 November 2026 — code quality pass in progress (Codex)
+
+Active editor: Codex. User asked to implement consistent style, smaller functions, careful state/error handling, tests and static checks. Preserve submitted baseline 8f9c8a5 and compare behavior before release. No score beyond attempt one is known. Current priorities are eligibility, provider parsing, request guards, and frontend responsibilities. Next three tasks: refactor and add focused regressions, enable enforceable styling and static checks in CI, then run and review the candidate. No server started.
+
+## 26 November 2026 — code quality candidate passed locally (Codex)
+
+Active editor: Codex. Refactored eligibility, CAMS parsing, request buffering and planner/HTTP interfaces. Split frontend into controller, JSON requests, profile form, views and safe DOM helpers. Handled malformed unit/coordinate metadata, stale plan responses, expired comparisons and bounded streamed bodies explicitly. Comparison changes now follow plan order. No changes to catalogue, provider selection, deployment settings or the Gemini request's data fields.
+
+CI now enforces Ruff naming, bug and complexity rules, mypy, ESLint and Prettier in addition to tests. Local checks passed: 64 backend tests with 88% combined statement/branch coverage, two Node unit tests, six Chromium tests including the desktop and mobile axe checks. A separate 896-combination check matched the submitted eligibility order. Source pattern scanner found zero high/critical findings and the same retry-jitter medium flag. Fixture port 8019 was managed by Playwright. Production runtime dependencies unchanged. README, DESIGN and the attempt-two changes draft are current.
+
+Next three tasks: stage and publish the verified candidate to master, confirm CI and Render/live AI and check the public repository size, then review whether to spend attempt two. No attempt consumed in this pass.

@@ -21,3 +21,9 @@ No clinical reviewer has certified the advice. Generic sources do not justify pe
 ## 24 November release controls
 
 Requests are buffered only up to 32 KiB before API parsing; oversized bodies return 413, including streamed bodies without Content-Length. Responses use nosniff, frame denial, no-referrer, COOP same-origin, disabled camera/microphone/geolocation permissions and a strict CSP (`script-src 'self'`, no inline code). HSTS is added behind HTTPS. API and page responses are no-store; static assets use no-cache, so the browser revalidates them with an ETag. FastAPI's /docs is exempt from the CSP because it needs CDN scripts. These controls do not replace hosting TLS or distributed rate limits. The current pattern scan is recorded in docs/security-scan.json. FastAPI's interactive documentation retains its own CDN and inline-code requirements.
+
+## 26 November maintainability pass
+
+Eligibility separates household restrictions, pollutant conditions and action ordering. The same catalogue, index ranges and budget order apply. Provider parsing normalizes timestamps, readings and coordinates separately. A malformed unit marks its reading unavailable while keeping the remaining valid readings. Invalid coordinates fall back to the requested city coordinates. Request guards enforce the byte cap before appending each incoming chunk and deliver one replayed body to the application.
+
+The frontend separates form handling, JSON requests and rendering. A plan and its submitted profile are stored together when the response matches the current edit revision. A pending comparison is kept as one record and expires if its form revision no longer matches. The error view can explain an expired comparison without enabling acceptance. Same-origin modules use the existing strict CSP and safe DOM helpers.

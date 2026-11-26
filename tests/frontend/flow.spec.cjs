@@ -2,10 +2,10 @@ const { test, expect } = require('@playwright/test');
 
 test('keyboard flow creates and revises a plan with fixed commitments', async ({ page }) => {
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
     window.cspViolations = [];
-    document.addEventListener('securitypolicyviolation', event => {
+    document.addEventListener('securitypolicyviolation', (event) => {
       window.cspViolations.push(event.violatedDirective);
     });
   });
@@ -65,28 +65,39 @@ test('invalid commitment displays an error and returns focus to setup', async ({
   await expect(page.getByRole('tab', { name: 'Your household' })).toBeFocused();
 });
 
-for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+]) {
   test('automated accessibility at width ' + viewport.width, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.addInitScript({ path: require.resolve('axe-core/axe.min.js') });
     await page.goto('/');
-    const audit = async name => {
+    const audit = async (name) => {
       // Measure contrast on the settled view, after the entrance fade and fonts.
       await page.evaluate(async () => {
         await document.fonts.ready;
-        const animations = document.getAnimations().filter(animation =>
-          animation.effect?.getTiming().iterations !== Infinity,
-        );
-        await Promise.allSettled(animations.map(animation => animation.finished));
+        const animations = document
+          .getAnimations()
+          .filter((animation) => animation.effect?.getTiming().iterations !== Infinity);
+        await Promise.allSettled(animations.map((animation) => animation.finished));
       });
       const violations = await page.evaluate(async () => {
         const { violations } = await window.axe.run({
-          runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] },
+          runOnly: {
+            type: 'tag',
+            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'],
+          },
         });
-        return violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => node.target) }));
+        return violations.map(({ id, nodes }) => ({
+          id,
+          targets: nodes.map((node) => node.target),
+        }));
       });
       expect(violations, name).toEqual([]);
-      const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      const overflows = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      );
       expect(overflows, name + ' horizontal overflow').toBe(false);
     };
 
@@ -109,3 +120,49 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expect(page.getByRole('button', { name: 'Metro unavailable' })).toBeFocused();
   });
 }
+
+test('ignores a plan response after its submitted profile changes', async ({ page }) => {
+  const requestStarted = Promise.withResolvers();
+  const releaseResponse = Promise.withResolvers();
+  await page.route('**/api/plan', async (route) => {
+    requestStarted.resolve();
+    await releaseResponse.promise;
+    await route.continue();
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'School-run parent' }).click();
+  await page.locator('#btn-create-plan').click();
+  try {
+    await requestStarted.promise;
+    await page.getByRole('tab', { name: 'Your household' }).click();
+    await page
+      .getByRole('textbox', { name: 'Commitment name' })
+      .first()
+      .fill('New school drop-off');
+    await page.getByRole('tab', { name: 'Your day' }).click();
+  } finally {
+    releaseResponse.resolve();
+  }
+  await expect(page.getByRole('alert')).toContainText('Your setup changed');
+  await expect(page.locator('#plan-content')).toBeHidden();
+
+  await page.getByRole('button', { name: 'Back to setup' }).click();
+  await page.locator('#btn-create-plan').click();
+  await expect(page.locator('#timeline')).toContainText('New school drop-off');
+});
+
+test('explains an expired comparison and prevents accepting a stale result', async ({ page }) => {
+  const detail = 'The previous plan expired. Create a new plan first.';
+  await page.route('**/api/compare', (route) => route.fulfill({ status: 409, json: { detail } }));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'School-run parent' }).click();
+  await page.locator('#btn-create-plan').click();
+  await page.getByRole('button', { name: 'Metro unavailable' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Plan Comparison' });
+  await expect(dialog.getByRole('alert')).toContainText(detail);
+  await expect(dialog.getByRole('button', { name: 'Use revised plan' })).toBeDisabled();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+});

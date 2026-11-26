@@ -2,10 +2,15 @@
   "name": "saans-browser-tests",
   "private": true,
   "scripts": {
-    "test:browser": "node ./node_modules/@playwright/test/cli.js test"
+    "test:browser": "node ./node_modules/@playwright/test/cli.js test",
+    "lint": "node ./node_modules/eslint/bin/eslint.js \"app/static/*.js\" \"tests/frontend/*.{js,cjs}\" \"playwright.config.cjs\"",
+    "format:check": "node ./node_modules/prettier/bin/prettier.cjs --check \"app/static/*.js\" \"tests/frontend/*.{js,cjs}\" \"*.config.{js,cjs}\""
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
-    "axe-core": "4.14.1"
-  }
+    "axe-core": "4.14.1",
+    "eslint": "10.15.0",
+    "prettier": "3.10.1"
+  },
+  "type": "module"
 }

@@ -65,7 +65,7 @@ Rechecked signed in through Chrome on 26 Nov: attempts **0/3**, ends **29/11/202
 | Project Demo Video Submission | https://youtu.be/KyVVyveKvt8 (Unlisted; plays signed out, checked 26 Nov) |
 | LinkedIn Post | https://www.linkedin.com/posts/mohammed-tousif-malekopp-4370792bb_buildwithai-promptwarsvirtual-challenge6-share-7531409733522534401-loH2/ |
 
-**Describe the changes (781/1024, use after the latest Render deploy is verified):**
+**Describe the changes (781/1024, verified on Render):**
 
 Saans turns a household's city, routines, budget, transport and resources into practical air-quality actions. Live Open-Meteo CAMS readings include source, index and time labels. Gemini ranks eligible action IDs. Saans validates the IDs and shows reviewed advice, trade-offs and citations. Users can compare a revised plan with the stored baseline and preserve fixed commitments. The app shows validation errors and labels fallback results. The release uses strict CSP, safe DOM rendering, a backup-model circuit breaker and a 10-minute air-data cache. Tests include 51 backend checks, 2 frontend unit checks and 4 Chromium checks. The backend suite reports 82% coverage and axe-core reports zero violations for the tested desktop and mobile states. Impact guidance is qualitative.
 
@@ -98,3 +98,14 @@ Image to add alongside the artwork: output/demo/saans-live-plan.png (a real scre
 
 ## 26 November 2026 — LinkedIn post edited (Claude Code)
 With the user's explicit approval, Claude Code edited the existing post in the user's signed-in Chrome. Only the outdated paragraph changed: it now says Saans is live on Render with real Gemini 3.5 Flash-Lite plans and live CAMS air data, that all 38 tests pass, and links the app, the demo video (https://youtu.be/KyVVyveKvt8) and the repo. LinkedIn shows these as lnkd.in short links. After reloading, the signed-in view showed the new text, the Google for Developers and Hack2skill company mentions still linked, all three hashtags, and the artwork. The post URL is unchanged. The signed-out public page still served the old cached text immediately after saving; recheck it later. LinkedIn's edit dialog cannot add images, so the real screenshot is NOT on the post. Options: add it as a comment with a photo, or make a new post (which needs a new form link). Remaining user action: review the form values in docs/submission-kit.md and press Submit (0/3 attempts, closes 29 Nov 23:59 IST).
+
+
+## 26 November 2026 — attempt 1 submitted (Claude Code)
+The user's own words asked for any corrections and then submission. Before submitting, Claude Code checked that commit 8f9c8a5 (Codex: HTML rendering sinks removed, browser tests added) is on origin master and live on Render. CI passed and its log confirms 51 backend tests, 2 Node unit tests, 82% backend coverage and 4 Chromium tests. The form was blank (0/3). Claude Code filled all seven fields with the user's supplied values in the signed-in Chrome and read them back: every value matched exactly, changes 781/1024, GenAI 641/1024, LinkedIn post unchanged. No corrections were needed. Submit opened a dialog requiring agreement to a plagiarism check (disqualification if plagiarism is found). Claude Code paused, and the user explicitly said "Yes, agree and submit". Claude Code ticked the box and submitted. The portal showed "Submission submitted successfully!" (attempt 1), and the counter is now **1/3** with Attempt 1 Analyzing. The rank shown before submitting was #716/56290 (it doesn't yet reflect this attempt). Next three tasks: read the attempt 1 score and AI feedback once analysis finishes; fix exactly what the feedback names, with tests, and redeploy; use attempt 2 only after the fixes are verified live, and keep attempt 3 in reserve (closes 29 Nov 23:59 IST).
+
+
+## Attempt two candidate changes (722/1024)
+
+Use after verifying this candidate on Render. Keep the existing app, repository, video and LinkedIn field links. The same Google Gemini services and data-sharing scope apply.
+
+Saans builds practical indoor-air and transport plans around a household's city, budget, resources and fixed commitments. Live CAMS model data is source-labelled. Gemini ranks eligible action IDs and Saans validates them before showing reviewed advice and citations. Since attempt one, we separated eligibility, provider parsing, HTTP state and frontend responsibilities. Malformed pollutant units no longer discard valid readings. Stale plan responses and expired comparisons are handled safely. Ruff, mypy, ESLint and Prettier now check the project in CI with 64 backend tests, 88% backend coverage, two frontend unit tests and six Chromium tests. The eligibility order matched attempt one across 896 input combinations.

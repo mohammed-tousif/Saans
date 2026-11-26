@@ -14,7 +14,7 @@ const state = {
   profile: null,
   currentPlan: null,
   airContext: null,
-  sources: {},
+  sources: Object.create(null),
   isGenerating: false,
   isSampleProfile: false,
   revision: 0,
@@ -107,7 +107,7 @@ const ACTIONS = {
   'sample': el => loadSampleProfile(el.dataset.profile),
   'add-routine': () => addRoutineBlock(),
   'remove-routine': el => { el.closest('.routine-block')?.remove(); state.revision++; },
-  'switch-tab': el => switchTab(el.dataset.tab),
+  'switch-tab': el => switchTab(el.dataset.tab, true),
   'close-compare': () => document.getElementById('compare-modal').close(),
   'accept-revised': () => acceptRevisedPlan(),
   'toggle-action': el => toggleAction(el),
@@ -117,7 +117,7 @@ const ACTIONS = {
 
 function handleAction(event) {
   const el = event.target.closest('[data-action]');
-  const action = el && ACTIONS[el.dataset.action];
+  const action = el && Object.hasOwn(ACTIONS, el.dataset.action) && ACTIONS[el.dataset.action];
   if (!action) return;
   if (el.tagName === 'A') event.preventDefault();
   action(el);
@@ -144,14 +144,15 @@ function setupEventListeners() {
     const tabs = [...document.querySelectorAll('.tab')];
     const idx = tabs.indexOf(document.activeElement);
     if (idx === -1) return;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const next = e.key === 'ArrowRight'
-        ? tabs[(idx + 1) % tabs.length]
-        : tabs[(idx - 1 + tabs.length) % tabs.length];
-      next.focus();
-      next.click();
-    }
+    const destinations = {
+      ArrowRight: (idx + 1) % tabs.length,
+      ArrowLeft: (idx - 1 + tabs.length) % tabs.length,
+      Home: 0,
+      End: tabs.length - 1,
+    };
+    if (!Object.hasOwn(destinations, e.key)) return;
+    e.preventDefault();
+    switchTab(tabs[destinations[e.key]].dataset.tab, true);
   });
 }
 
@@ -185,7 +186,7 @@ async function updateSampleBannerForMode() {
 }
 
 // --- Tab Switching ---
-function switchTab(tabName) {
+function switchTab(tabName, focus = false) {
   state.currentTab = tabName;
 
   // Update tab buttons
@@ -193,6 +194,7 @@ function switchTab(tabName) {
     const isActive = t.dataset.tab === tabName;
     t.classList.toggle('active', isActive);
     t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    t.tabIndex = isActive ? 0 : -1;
   });
 
   // Update views
@@ -201,6 +203,7 @@ function switchTab(tabName) {
     v.classList.toggle('active', isActive);
     v.hidden = !isActive;
   });
+  if (focus) document.getElementById('tab-' + tabName)?.focus();
 }
 
 // --- Sample Profiles ---
@@ -216,7 +219,7 @@ function loadSampleProfile(type) {
 
   // Set routine blocks
   const container = document.getElementById('routine-blocks');
-  container.innerHTML = '';
+  container.replaceChildren();
   sample.routine_blocks.forEach(block => {
     addRoutineBlock(block.label, block.start_time, block.end_time);
   });
@@ -251,17 +254,24 @@ function loadSampleProfile(type) {
 
 // --- Routine Blocks ---
 function addRoutineBlock(label = '', startTime = '09:00', endTime = '17:00') {
-  const container = document.getElementById('routine-blocks');
-  const block = document.createElement('div');
-  block.className = 'routine-block';
-  block.innerHTML = `
-    <input type="text" placeholder="e.g., School drop-off" value="${escapeHtml(label)}"
-           aria-label="Commitment name" class="routine-label">
-    <input type="time" value="${escapeHtml(startTime)}" aria-label="Start time" class="routine-start">
-    <input type="time" value="${escapeHtml(endTime)}" aria-label="End time" class="routine-end">
-    <button type="button" class="btn-remove" data-action="remove-routine" aria-label="Remove commitment">✕</button>
-  `;
-  container.appendChild(block);
+  const block = node('div', 'routine-block');
+  const fields = [
+    ['text', 'routine-label', 'Commitment name', label],
+    ['time', 'routine-start', 'Start time', startTime],
+    ['time', 'routine-end', 'End time', endTime],
+  ];
+  for (const [type, className, name, value] of fields) {
+    const input = node('input', className);
+    input.type = type;
+    input.value = value;
+    input.setAttribute('aria-label', name);
+    if (type === 'text') input.placeholder = 'e.g., School drop-off';
+    block.append(input);
+  }
+  const remove = actionButton('btn-remove', 'remove-routine', '✕');
+  remove.setAttribute('aria-label', 'Remove commitment');
+  block.append(remove);
+  document.getElementById('routine-blocks').append(block);
 }
 
 // --- Form Data Collection ---
@@ -325,7 +335,7 @@ async function createPlan(constraintChanges = []) {
   state.isGenerating = true;
 
   // Switch to Today view
-  switchTab('today');
+  switchTab('today', true);
 
   // Show loading
   const planContent = document.getElementById('plan-content');
@@ -336,7 +346,7 @@ async function createPlan(constraintChanges = []) {
   planContent.style.display = 'none';
   todayEmpty.style.display = 'none';
   airLoading.style.display = 'flex';
-  airLoading.innerHTML = '<span class="spinner"></span><span>Fetching environmental data and generating your plan...</span>';
+  airLoading.replaceChildren(node('span', 'spinner'), node('span', '', 'Fetching environmental data and generating your plan...'));
 
   // Update button state
   const btn = document.getElementById('btn-create-plan');
@@ -394,59 +404,45 @@ async function createPlan(constraintChanges = []) {
 // --- Rendering ---
 
 function renderAirContext(ctx) {
-  if (!ctx) return;
-
   const card = document.getElementById('air-context');
   const loading = document.getElementById('air-loading');
   if (loading) loading.style.display = 'none';
 
-  const categoryClass = getCategoryClass(ctx.category);
-  const isStale = ctx.is_stale;
-  const sourceKind = ctx.source_kind === 'model' ? 'Model forecast' :
-    ctx.source_kind === 'fixture' ? 'Fixture data' : ctx.source_kind === 'unavailable' ? 'Data unavailable' : 'Observation';
-
-  let timeDisplay = 'Unknown';
-  if (ctx.observed_at) {
-    const d = new Date(ctx.observed_at);
-    timeDisplay = d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+  const sourceKind = ({
+    model: 'Model forecast', fixture: 'Fixture data', unavailable: 'Data unavailable',
+  })[ctx.source_kind] || 'Observation';
+  const time = ctx.observed_at
+    ? new Date(ctx.observed_at).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true,
+    })
+    : 'Unknown';
+  const header = node('div', 'air-header', node('span', 'air-location', ctx.location_label));
+  if (ctx.category) {
+    header.append(node('span', 'air-category ' + getCategoryClass(ctx.category), ctx.category));
   }
-
-  let pollutantsHtml = '';
-  if (ctx.pollutants && ctx.pollutants.length > 0) {
-    pollutantsHtml = '<div class="air-pollutants">';
-    ctx.pollutants.forEach(p => {
-      pollutantsHtml += `
-        <div class="pollutant-chip">
-          <span class="pollutant-name">${escapeHtml(p.name)}</span>
-          <span class="pollutant-value">${Number(p.value).toFixed(1)}</span>
-          <span class="pollutant-unit">${escapeHtml(p.unit)}</span>
-        </div>`;
-    });
-    pollutantsHtml += '</div>';
+  const reading = node('div', 'air-reading',
+    node('strong', '', ctx.index_value == null ? '—' : Number(ctx.index_value).toFixed(0)),
+    node('span', '', ctx.index_system || 'Index unavailable', node('small', '', sourceKind + ' · ' + time)),
+  );
+  const metadata = [sourceKind];
+  if (ctx.index_system) metadata.push(ctx.index_system + ': ' + (ctx.index_value ?? '—'));
+  metadata.push(time, ctx.provider);
+  card.replaceChildren(node('p', 'eyebrow', 'THE AIR AROUND YOU'), header, reading,
+    node('div', 'air-meta', ...metadata.map(value => node('span', 'air-meta-item', value))),
+  );
+  if (ctx.pollutants?.length) {
+    card.append(node('div', 'air-pollutants', ...ctx.pollutants.map(pollutant =>
+      node('div', 'pollutant-chip',
+        node('span', 'pollutant-name', pollutant.name),
+        node('span', 'pollutant-value', Number(pollutant.value).toFixed(1)),
+        node('span', 'pollutant-unit', pollutant.unit),
+      ),
+    )));
   }
-
-  let staleHtml = '';
-  if (isStale) {
-    staleHtml = `<div class="stale-warning">Data is older than expected. Treat with caution.</div>`;
+  if (ctx.is_stale) card.append(node('div', 'stale-warning', 'Data is older than expected. Treat with caution.'));
+  if (ctx.source_kind === 'fixture') {
+    card.append(node('div', 'stale-warning', 'This is synthetic test data, not real measurements.'));
   }
-
-  card.innerHTML = `
-    <p class="eyebrow">THE AIR AROUND YOU</p>
-    <div class="air-header">
-      <span class="air-location">${escapeHtml(ctx.location_label)}</span>
-      ${ctx.category ? `<span class="air-category ${categoryClass}">${escapeHtml(ctx.category)}</span>` : ''}
-    </div>
-    <div class="air-reading"><strong>${ctx.index_value == null ? '—' : Number(ctx.index_value).toFixed(0)}</strong><span>${escapeHtml(ctx.index_system || 'Index unavailable')}<small>${sourceKind} · ${timeDisplay}</small></span></div>
-    <div class="air-meta">
-      <span class="air-meta-item">${sourceKind}</span>
-      ${ctx.index_system ? `<span class="air-meta-item">${escapeHtml(ctx.index_system)}: ${escapeHtml(ctx.index_value)}</span>` : ''}
-      <span class="air-meta-item">${timeDisplay}</span>
-      <span class="air-meta-item">${escapeHtml(ctx.provider)}</span>
-    </div>
-    ${pollutantsHtml}
-    ${staleHtml}
-    ${ctx.source_kind === 'fixture' ? '<div class="stale-warning">This is synthetic test data, not real measurements.</div>' : ''}
-  `;
 }
 
 function renderPlan(plan) {
@@ -470,7 +466,7 @@ function renderPlan(plan) {
 
   // Actions
   const actionsList = document.getElementById('actions-list');
-  actionsList.innerHTML = '';
+  actionsList.replaceChildren();
   plan.actions.forEach((action, i) => {
     actionsList.appendChild(createActionCard(action, i + 1));
   });
@@ -482,9 +478,13 @@ function renderPlan(plan) {
   const warningsDiv = document.getElementById('warnings');
   if (plan.warnings && plan.warnings.length > 0) {
     warningsDiv.style.display = 'flex';
-    warningsDiv.innerHTML = plan.warnings.map(w =>
-      `<div class="warning-item" role="alert"><span aria-hidden="true">⚠</span> ${escapeHtml(w)}</div>`
-    ).join('');
+    warningsDiv.replaceChildren(...plan.warnings.map(warning => {
+      const icon = node('span', '', '⚠');
+      icon.setAttribute('aria-hidden', 'true');
+      const item = node('div', 'warning-item', icon, ' ', warning);
+      item.setAttribute('role', 'alert');
+      return item;
+    }));
   } else {
     warningsDiv.style.display = 'none';
   }
@@ -495,73 +495,45 @@ function renderPlan(plan) {
 
 let actionCardSequence = 0;
 function createActionCard(action, number) {
-  const detailId = `detail-${++actionCardSequence}`;
-  const card = document.createElement('div');
-  card.className = 'action-card';
-  card.id = `action-${actionCardSequence}`;
+  const sequence = ++actionCardSequence;
+  const card = node('div', 'action-card');
+  card.id = 'action-' + sequence;
+  const details = node('div', 'action-details');
+  details.id = 'detail-' + sequence;
+  const arrow = node('span', 'action-toggle', '▼');
+  arrow.setAttribute('aria-hidden', 'true');
+  const header = actionButton('action-card-header', 'toggle-action',
+    node('span', 'action-number', number), node('span', 'action-title', action.title), arrow,
+  );
+  header.setAttribute('aria-expanded', 'false');
+  header.setAttribute('aria-controls', details.id);
 
-  const purposeCls = `purpose-${action.action_id.startsWith('ACT01') && parseInt(action.action_id.slice(3)) <= 3 ? 'exposure' : 'emissions'}`;
-
-  // Determine purpose from catalogue
-  let purposeLabel = 'Guidance';
-  if (action.reason && action.reason.toLowerCase().includes('exposure')) purposeLabel = 'Exposure';
-  else if (action.reason && action.reason.toLowerCase().includes('emission')) purposeLabel = 'Emissions';
-
-  const evidenceLinks = (action.evidence_ids || []).map(eid => {
-    const src = state.sources[eid];
-    if (src) {
-      return `<button type="button" class="evidence-link" data-action="show-source"
-              data-source="${escapeHtml(eid)}" title="${escapeHtml(src.title)}">${escapeHtml(eid)}</button>`;
-    }
-    return `<span class="evidence-link">${escapeHtml(eid)}</span>`;
-  }).join('');
-
-  card.innerHTML = `
-    <div class="action-card-header" data-action="toggle-action" tabindex="0"
-         role="button" aria-expanded="false" aria-controls="${detailId}">
-      <span class="action-number">${number}</span>
-      <span class="action-title">${escapeHtml(action.title)}</span>
-      <span class="action-toggle" aria-hidden="true">▼</span>
-    </div>
-    <div class="action-details" id="${detailId}">
-      ${action.time_window ? `
-        <div class="action-detail-row">
-          <div class="action-detail-label">When</div>
-          <div class="action-detail-text">${escapeHtml(action.time_window)}</div>
-        </div>` : ''}
-      ${action.reason ? `
-        <div class="action-detail-row">
-          <div class="action-detail-label">Why this fits you</div>
-          <div class="action-detail-text">${escapeHtml(action.reason)}</div>
-        </div>` : ''}
-      ${action.tradeoff ? `
-        <div class="action-detail-row">
-          <div class="action-detail-label">Tradeoff</div>
-          <div class="action-detail-text">${escapeHtml(action.tradeoff)}</div>
-        </div>` : ''}
-      ${action.assumptions ? `
-        <div class="action-detail-row">
-          <div class="action-detail-label">Assumptions</div>
-          <div class="action-detail-text">${escapeHtml(action.assumptions)}</div>
-        </div>` : ''}
-      ${evidenceLinks ? `
-        <div class="action-detail-row">
-          <div class="action-detail-label">Evidence</div>
-          <div class="action-evidence-links">${evidenceLinks}</div>
-        </div>` : ''}
-    </div>
-  `;
-
-  // Keyboard support for expand/collapse
-  const header = card.querySelector('.action-card-header');
-  header.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleAction(header);
-    }
-  });
-
+  const rows = [
+    ['When', action.time_window],
+    ['Why this fits you', action.reason],
+    ['Tradeoff', action.tradeoff],
+    ['Assumptions', action.assumptions],
+  ];
+  for (const [label, value] of rows) {
+    if (value) details.append(actionDetail(label, node('div', 'action-detail-text', value)));
+  }
+  if (action.evidence_ids?.length) {
+    const evidence = node('div', 'action-evidence-links', ...action.evidence_ids.map(id => {
+      const source = state.sources[id];
+      if (!source) return node('span', 'evidence-link', id);
+      const button = actionButton('evidence-link', 'show-source', id);
+      button.dataset.source = id;
+      button.title = source.title;
+      return button;
+    }));
+    details.append(actionDetail('Evidence', evidence));
+  }
+  card.append(header, details);
   return card;
+}
+
+function actionDetail(label, content) {
+  return node('div', 'action-detail-row', node('div', 'action-detail-label', label), content);
 }
 
 function toggleAction(headerEl) {
@@ -573,20 +545,18 @@ function toggleAction(headerEl) {
 
 function renderTimeline(timeline) {
   const container = document.getElementById('timeline');
-  if (!timeline || timeline.length === 0) {
-    container.innerHTML = '<p class="empty-state timeline-empty">Timeline not available.</p>';
+  if (!timeline?.length) {
+    container.replaceChildren(node('p', 'empty-state timeline-empty', 'Timeline not available.'));
     return;
   }
-
-  container.innerHTML = timeline.map(block => {
-    const actions = (block.actions || []).map(a => `<li>${escapeHtml(a)}</li>`).join('');
-    return `
-      <div class="timeline-block">
-        <div class="timeline-period">${escapeHtml(block.period)}</div>
-        <ul class="timeline-actions">${actions}</ul>
-        ${block.notes ? `<div class="timeline-notes">${escapeHtml(block.notes)}</div>` : ''}
-      </div>`;
-  }).join('');
+  container.replaceChildren(...timeline.map(block => {
+    const row = node('div', 'timeline-block',
+      node('div', 'timeline-period', block.period),
+      node('ul', 'timeline-actions', ...(block.actions || []).map(text => node('li', '', text))),
+    );
+    if (block.notes) row.append(node('div', 'timeline-notes', block.notes));
+    return row;
+  }));
 }
 
 function renderConstraintButtons() {
@@ -625,11 +595,13 @@ function renderConstraintButtons() {
   // Flexibility
   constraints.push({ label: 'More flexible today (+30 min)', icon: '+', change: 'more_flexibility' });
 
-  container.innerHTML = constraints.map(c =>
-    `<button class="constraint-btn" data-action="change-constraint" data-change="${escapeHtml(c.change)}" type="button">
-      <span class="btn-icon" aria-hidden="true">${escapeHtml(c.icon)}</span> ${escapeHtml(c.label)}
-    </button>`
-  ).join('');
+  container.replaceChildren(...constraints.map(constraint => {
+    const icon = node('span', 'btn-icon', constraint.icon);
+    icon.setAttribute('aria-hidden', 'true');
+    const button = actionButton('constraint-btn', 'change-constraint', icon, ' ', constraint.label);
+    button.dataset.change = constraint.change;
+    return button;
+  }));
 }
 
 async function changeConstraint(changeDescription) {
@@ -644,7 +616,9 @@ async function changeConstraint(changeDescription) {
   // Show comparison modal
   const modal = document.getElementById('compare-modal');
   const body = document.getElementById('compare-body');
-  body.innerHTML = '<div class="compare-loading" role="status"><span class="spinner"></span><br>Generating revised plan...</div>';
+  const loading = node('div', 'compare-loading', node('span', 'spinner'), node('br'), 'Generating revised plan...');
+  loading.setAttribute('role', 'status');
+  body.replaceChildren(loading);
   modal.showModal();
 
   try {
@@ -669,73 +643,44 @@ async function changeConstraint(changeDescription) {
     accept.disabled = false;
 
   } catch (err) {
-    body.innerHTML = `
-      <div class="error-state">
-        <h3>Comparison failed</h3>
-        <p>${escapeHtml(err.message)}</p>
-      </div>`;
+    body.replaceChildren(errorMessage('Comparison failed', err.message));
   } finally {
     state.isGenerating = false;
   }
 }
 
 function renderComparison(comparison) {
-  const body = document.getElementById('compare-body');
+  const { revised_plan: plan } = comparison;
+  const changes = (comparison.changes_summary || []).map(text => {
+    const className = text.startsWith('Added:') ? 'change-added'
+      : text.startsWith('Removed:') ? 'change-removed' : '';
+    return node('div', 'compare-change ' + className, text);
+  });
+  const preserved = (comparison.preserved_constraints || []).map(text =>
+    node('div', 'compare-change change-preserved', '✓ Preserved: ' + text),
+  );
+  const revised = (plan.actions || []).map((action, index) =>
+    node('div', 'compare-action-row', node('span', 'action-number action-number-sm', index + 1),
+      node('span', 'compare-action-title', action.title)),
+  );
+  if (plan.context_summary) revised.push(node('p', 'compare-note compare-summary', plan.context_summary));
+  const notes = (comparison.impact_notes || []).map(text => node('p', 'compare-note', text));
+  const sections = [compareSection('What changed', node('div', 'compare-changes',
+    ...(changes.length ? changes : [node('p', '', 'No major action changes detected.')]),
+  ))];
+  if (preserved.length) sections.push(compareSection('Preserved commitments', node('div', 'compare-changes', ...preserved)));
+  sections.push(compareSection('Revised plan actions', ...revised));
+  if (notes.length) sections.push(compareSection('Impact notes', ...notes));
+  document.getElementById('compare-body').replaceChildren(...sections);
+}
 
-  let changesHtml = '';
-  if (comparison.changes_summary) {
-    changesHtml = comparison.changes_summary.map(c => {
-      const cls = c.includes('Added') ? 'change-added' : c.includes('Removed') ? 'change-removed' : '';
-      return `<div class="compare-change ${cls}">${escapeHtml(c)}</div>`;
-    }).join('');
-  }
-
-  let preservedHtml = '';
-  if (comparison.preserved_constraints && comparison.preserved_constraints.length > 0) {
-    preservedHtml = comparison.preserved_constraints.map(p =>
-      `<div class="compare-change change-preserved">✓ Preserved: ${escapeHtml(p)}</div>`
-    ).join('');
-  }
-
-  let impactHtml = '';
-  if (comparison.impact_notes && comparison.impact_notes.length > 0) {
-    impactHtml = comparison.impact_notes.map(n =>
-      `<p class="compare-note">${escapeHtml(n)}</p>`
-    ).join('');
-  }
-
-  // Build revised actions list
-  const revisedActions = (comparison.revised_plan.actions || []).map((a, i) =>
-    `<div class="compare-action-row">
-      <span class="action-number action-number-sm">${i + 1}</span>
-      <span class="compare-action-title">${escapeHtml(a.title)}</span>
-    </div>`
-  ).join('');
-
-  body.innerHTML = `
-    <div class="compare-section">
-      <div class="compare-section-title">What changed</div>
-      <div class="compare-changes">${changesHtml || '<p>No major action changes detected.</p>'}</div>
-    </div>
-    ${preservedHtml ? `
-      <div class="compare-section">
-        <div class="compare-section-title">Preserved commitments</div>
-        <div class="compare-changes">${preservedHtml}</div>
-      </div>` : ''}
-    <div class="compare-section">
-      <div class="compare-section-title">Revised plan actions</div>
-      ${revisedActions}
-      ${comparison.revised_plan.context_summary ? `<p class="compare-note compare-summary">${escapeHtml(comparison.revised_plan.context_summary)}</p>` : ''}
-    </div>
-    ${impactHtml ? `
-      <div class="compare-section">
-        <div class="compare-section-title">Impact notes</div>
-        ${impactHtml}
-      </div>` : ''}
-  `;
+function compareSection(title, ...content) {
+  return node('div', 'compare-section', node('div', 'compare-section-title', title), ...content);
 }
 
 function acceptRevisedPlan() {
+  const modal = document.getElementById('compare-modal');
+  modal.close();
   if (state._pendingRevisedPlan && state._pendingRevision === state.revision) {
     state.profile = state._pendingRevisedProfile;
     loadSampleProfile(state.profile);
@@ -748,113 +693,77 @@ function acceptRevisedPlan() {
     renderProvenance(state.currentPlan.environmental_context);
     updateHeaderStatus(state.currentPlan);
     state._pendingRevisedPlan = null;
+    document.getElementById('tab-today').focus();
   }
-  document.getElementById('compare-modal').close();
 }
 
 // --- Home Actions ---
 function renderHomeActions(plan) {
   const container = document.getElementById('home-actions');
-  if (!plan || !plan.actions) {
-    container.innerHTML = '<div class="empty-state"><p>Create a plan first to see home-specific recommendations.</p></div>';
+  if (!plan?.actions) {
+    container.replaceChildren(emptyMessage('Create a plan first to see home-specific recommendations.'));
     return;
   }
-
-  // Filter to home/indoor-relevant actions
-  const homeActions = plan.actions.filter(a => {
-    const id = a.action_id;
-    // Indoor-focused action IDs
-    return ['ACT001', 'ACT002', 'ACT005', 'ACT006', 'ACT008', 'ACT011', 'ACT012', 'ACT014'].includes(id);
-  });
-
-  if (homeActions.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <p>No specific home actions in your current plan. Your plan focuses on outdoor and transport adjustments.</p>
-      </div>`;
+  const homeIds = ['ACT001', 'ACT002', 'ACT005', 'ACT006', 'ACT008', 'ACT011', 'ACT012', 'ACT014'];
+  const homeActions = plan.actions.filter(action => homeIds.includes(action.action_id));
+  if (!homeActions.length) {
+    container.replaceChildren(emptyMessage('No specific home actions in your current plan. Your plan focuses on outdoor and transport adjustments.'));
     return;
   }
-
-  container.innerHTML = '';
-  homeActions.forEach((action, i) => {
-    container.appendChild(createActionCard(action, i + 1));
-  });
+  container.replaceChildren(...homeActions.map((action, index) => createActionCard(action, index + 1)));
 }
 
 // --- Sources ---
 function renderSources() {
   const container = document.getElementById('sources-list');
-  const sourceIds = Object.keys(state.sources);
-
-  if (sourceIds.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No sources loaded.</p></div>';
+  const sources = Object.values(state.sources);
+  if (!sources.length) {
+    container.replaceChildren(emptyMessage('No sources loaded.'));
     return;
   }
-
-  container.innerHTML = sourceIds.map(id => {
-    const s = state.sources[id];
-    return `
-      <div class="source-card" id="source-${escapeHtml(id)}">
-        <div>
-          <span class="source-id">${escapeHtml(id)}</span>
-          <span class="source-title">${escapeHtml(s.title)}</span>
-        </div>
-        <div class="source-org">${escapeHtml(s.organization)}</div>
-        <div class="source-claim">${escapeHtml(s.supported_claim)}</div>
-        ${safeUrl(s.url) ? `<a href="${escapeHtml(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer" class="source-link">${escapeHtml(s.url)}</a>` : ''}
-        ${s.limitations ? `<div class="source-limitations">${escapeHtml(s.limitations)}</div>` : ''}
-      </div>`;
-  }).join('');
+  container.replaceChildren(...sources.map(source => {
+    const card = node('div', 'source-card',
+      node('div', '', node('span', 'source-id', source.id), ' ', node('span', 'source-title', source.title)),
+      node('div', 'source-org', source.organization),
+      node('div', 'source-claim', source.supported_claim),
+    );
+    card.id = 'source-' + source.id;
+    card.tabIndex = -1;
+    const url = safeUrl(source.url);
+    if (url) {
+      const link = node('a', 'source-link', source.url);
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      card.append(link);
+    }
+    if (source.limitations) card.append(node('div', 'source-limitations', source.limitations));
+    return card;
+  }));
 }
 
 function renderProvenance(ctx) {
   if (!ctx) return;
   const card = document.getElementById('env-provenance');
   card.style.display = 'block';
-
-  let timeDisplay = 'Unknown';
-  if (ctx.observed_at) {
-    timeDisplay = new Date(ctx.observed_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const sourceKind = ({
+    model: 'Model forecast (not station observation)', fixture: 'Synthetic fixture data', unavailable: 'Unavailable',
+  })[ctx.source_kind] || 'Observation';
+  const rows = [['Provider', ctx.provider], ['Data type', sourceKind]];
+  if (ctx.index_system) rows.push(['Index system', ctx.index_system + ' (' + (ctx.index_value ?? '—') + ')']);
+  rows.push(['Data time', ctx.observed_at
+    ? new Date(ctx.observed_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Unknown']);
+  rows.push(['Location', ctx.location_label + ' (' + Number(ctx.latitude).toFixed(2) + ', ' + Number(ctx.longitude).toFixed(2) + ')']);
+  if (ctx.spatial_resolution_km) {
+    rows.push(['Spatial resolution', '~' + ctx.spatial_resolution_km + ' km (regional, not street-level)']);
   }
-
-  card.innerHTML = `
-    <h3 class="subsection-title provenance-title">Environmental Data Provenance</h3>
-    <div class="provenance-row">
-      <span class="provenance-label">Provider</span>
-      <span class="provenance-value">${escapeHtml(ctx.provider)}</span>
-    </div>
-    <div class="provenance-row">
-      <span class="provenance-label">Data type</span>
-      <span class="provenance-value">${ctx.source_kind === 'model' ? 'Model forecast (not station observation)' : ctx.source_kind === 'fixture' ? 'Synthetic fixture data' : ctx.source_kind === 'unavailable' ? 'Unavailable' : 'Observation'}</span>
-    </div>
-    ${ctx.index_system ? `
-    <div class="provenance-row">
-      <span class="provenance-label">Index system</span>
-      <span class="provenance-value">${escapeHtml(ctx.index_system)} (${escapeHtml(ctx.index_value)})</span>
-    </div>` : ''}
-    <div class="provenance-row">
-      <span class="provenance-label">Data time</span>
-      <span class="provenance-value">${timeDisplay}</span>
-    </div>
-    <div class="provenance-row">
-      <span class="provenance-label">Location</span>
-      <span class="provenance-value">${escapeHtml(ctx.location_label)} (${Number(ctx.latitude).toFixed(2)}, ${Number(ctx.longitude).toFixed(2)})</span>
-    </div>
-    ${ctx.spatial_resolution_km ? `
-    <div class="provenance-row">
-      <span class="provenance-label">Spatial resolution</span>
-      <span class="provenance-value">~${escapeHtml(ctx.spatial_resolution_km)} km (regional, not street-level)</span>
-    </div>` : ''}
-    <div class="provenance-row">
-      <span class="provenance-label">Attribution</span>
-      <span class="provenance-value">${escapeHtml(ctx.attribution)}</span>
-    </div>
-    ${ctx.is_stale ? `
-    <div class="provenance-row">
-      <span class="provenance-label">Freshness</span>
-      <span class="provenance-value provenance-stale">Stale — older than expected</span>
-    </div>` : ''}
-  `;
+  rows.push(['Attribution', ctx.attribution]);
+  if (ctx.is_stale) rows.push(['Freshness', 'Stale — older than expected', ' provenance-stale']);
+  card.replaceChildren(node('h3', 'subsection-title provenance-title', 'Environmental Data Provenance'),
+    ...rows.map(([label, value, extraClass = '']) => node('div', 'provenance-row',
+      node('span', 'provenance-label', label), node('span', 'provenance-value' + extraClass, value),
+    )),
+  );
 }
 
 function showSource(sourceId) {
@@ -862,7 +771,8 @@ function showSource(sourceId) {
   setTimeout(() => {
     const el = document.getElementById(`source-${sourceId}`);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({ block: 'center' });
       el.style.boxShadow = '0 0 0 2px var(--color-primary-lighter)';
       setTimeout(() => { el.style.boxShadow = ''; }, 2000);
     }
@@ -880,30 +790,42 @@ function updateHeaderStatus(plan) {
 
 // --- Error Display ---
 function showError(message) {
-  const planContent = document.getElementById('plan-content');
-  const todayEmpty = document.getElementById('today-empty');
-  const airLoading = document.getElementById('air-loading');
-
-  airLoading.style.display = 'none';
-  planContent.style.display = 'none';
-  todayEmpty.style.display = 'none';
-
-  const airContext = document.getElementById('air-context');
-  airContext.innerHTML = `
-    <div class="error-state">
-      <h3>Something went wrong</h3>
-      <p>${escapeHtml(message)}</p>
-      <button type="button" class="btn btn-secondary error-back" data-action="switch-tab" data-tab="setup">Back to setup</button>
-    </div>`;
+  for (const id of ['air-loading', 'plan-content', 'today-empty']) {
+    document.getElementById(id).style.display = 'none';
+  }
+  const panel = errorMessage('Something went wrong', message);
+  const back = actionButton('btn btn-secondary error-back', 'switch-tab', 'Back to setup');
+  back.dataset.tab = 'setup';
+  panel.append(back);
+  document.getElementById('air-context').replaceChildren(panel);
 }
 
 // --- Utility ---
-const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+// Element names and attributes are chosen by the UI. Values are appended as text.
+function node(tag, className = '', ...children) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  for (const child of children) {
+    if (child != null) element.append(child);
+  }
+  return element;
+}
 
-// Escapes text for HTML element content and quoted attribute values.
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>"']/g, ch => HTML_ESCAPES[ch]);
+function actionButton(className, action, ...children) {
+  const button = node('button', className, ...children);
+  button.type = 'button';
+  button.dataset.action = action;
+  return button;
+}
+
+function emptyMessage(message) {
+  return node('div', 'empty-state', node('p', '', message));
+}
+
+function errorMessage(title, message) {
+  const alert = node('div', 'error-state', node('h3', '', title), node('p', '', message));
+  alert.setAttribute('role', 'alert');
+  return alert;
 }
 
 // Only http(s) links from the source catalogue are rendered as clickable links.
@@ -930,5 +852,5 @@ function getCategoryClass(category) {
 
 // Exposed for Node's built-in test runner; ignored in the browser.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { escapeHtml, safeUrl, getCategoryClass };
+  module.exports = { safeUrl, getCategoryClass };
 }

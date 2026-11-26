@@ -1,0 +1,11 @@
+{
+  "name": "saans-browser-tests",
+  "private": true,
+  "scripts": {
+    "test:browser": "node ./node_modules/@playwright/test/cli.js test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "axe-core": "4.14.1"
+  }
+}

@@ -34,4 +34,18 @@ jobs:
           node --check app/static/app.js
           node --test tests/frontend/app.test.js
       - name: Backend tests
-        run: uv run pytest -q -o asyncio_default_fixture_loop_scope=function
+        run: |
+          uv run coverage run --branch --source=app -m pytest -q -o asyncio_default_fixture_loop_scope=function
+          uv run coverage report -m
+          uv run coverage xml
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage.xml
+      - name: Install browser test dependencies
+        run: |
+          npm ci --ignore-scripts
+          node ./node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Browser flows and accessibility
+        run: npm run test:browser

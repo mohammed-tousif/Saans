@@ -1,6 +1,6 @@
 # Challenge 06 submission kit
 
-**25 November release status.** The public app at https://saans-wwwc.onrender.com is serving live CAMS data and Gemini 3.5 Flash-Lite plans. Published repository: https://github.com/mohammed-tousif/Saans. The user-published LinkedIn URL is below. The demo video and final competition attempt are pending.
+**26 November release status.** The Render app serves live CAMS and Gemini Flash-Lite plans. The public repo, LinkedIn narrative, and unlisted 2:13 demo are linked below. Check the deployed version and final form values before using an attempt.
 
 ## Verified requirements — 24 November 2026
 
@@ -65,9 +65,9 @@ Rechecked signed in through Chrome on 26 Nov: attempts **0/3**, ends **29/11/202
 | Project Demo Video Submission | https://youtu.be/KyVVyveKvt8 (Unlisted; plays signed out, checked 26 Nov) |
 | LinkedIn Post | https://www.linkedin.com/posts/mohammed-tousif-malekopp-4370792bb_buildwithai-promptwarsvirtual-challenge6-share-7531409733522534401-loH2/ |
 
-**Describe the changes (882/1024; updated 26 Nov after hardening):**
+**Describe the changes (781/1024, use after the latest Render deploy is verified):**
 
-Saans (Challenge 06: Urban Air Quality Assistant) turns a household's city, fixed routines, budget, transport and home resources into practical air-quality actions. Deployed version: live Open-Meteo CAMS air data with source, index and time labels; Gemini ranks eligible reviewed action IDs and the server validates them; each action shows reviewed advice, trade-offs and citations; fixed commitments such as school drop-off are preserved; typed what-if comparison against the stored baseline, with accept; clear validation errors and labelled fallback. Latest hardening: strict Content-Security-Policy with no inline code, escaped output and http(s)-only links; backup-model circuit breaker and 10-minute air-data cache; axe-core WCAG 2.1 AA with 0 violations on desktop and mobile; 51 pytest plus Node frontend tests run in CI. No measured health or emissions savings are claimed.
+Saans turns a household's city, routines, budget, transport and resources into practical air-quality actions. Live Open-Meteo CAMS readings include source, index and time labels. Gemini ranks eligible action IDs. Saans validates the IDs and shows reviewed advice, trade-offs and citations. Users can compare a revised plan with the stored baseline and preserve fixed commitments. The app shows validation errors and labels fallback results. The release uses strict CSP, safe DOM rendering, a backup-model circuit breaker and a 10-minute air-data cache. Tests include 51 backend checks, 2 frontend unit checks and 4 Chromium checks. The backend suite reports 82% coverage and axe-core reports zero violations for the tested desktop and mobile states. Impact guidance is qualitative.
 
 **Gen AI services and where used (716/1024):**
 

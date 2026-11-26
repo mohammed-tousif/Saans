@@ -6,22 +6,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-const { escapeHtml, safeUrl, getCategoryClass } = require(
+const { safeUrl, getCategoryClass } = require(
   path.join(__dirname, '..', '..', 'app', 'static', 'app.js'),
 );
-
-test('escapeHtml neutralises markup and attribute breakouts', () => {
-  assert.equal(
-    escapeHtml(`<img src=x onerror="alert('x')">&`),
-    '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;',
-  );
-});
-
-test('escapeHtml keeps zero and drops null-like values', () => {
-  assert.equal(escapeHtml(0), '0');
-  assert.equal(escapeHtml(null), '');
-  assert.equal(escapeHtml(undefined), '');
-});
 
 test('safeUrl allows only http(s) links', () => {
   assert.equal(safeUrl('https://www.who.int/page'), 'https://www.who.int/page');

@@ -8,3 +8,7 @@ __pycache__
 .agents
 *.log
 dist
+node_modules
+test-results
+playwright-report
+output

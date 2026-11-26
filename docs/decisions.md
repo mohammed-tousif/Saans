@@ -91,3 +91,11 @@ Next three tasks: record and upload the live demo, confirm the organizer mention
 - The air cache applies only in live mode, so fixture tests stay deterministic. The breaker opens only for transient errors (5xx, timeout, 429) on a distinct primary.
 - One muted text color replaces 12 near-identical sage tones to pass AA; the visual hierarchy stays the same.
 - Frontend tests use Node's built-in runner (no new npm dependencies in the repo).
+
+## 26 November 2026 — pre-attempt gap closure (Codex)
+
+Active editor: Codex for this pass. Latest inherited release already contained strict CSP, live AI/cache/breaker, 51 backend tests, a six-criteria README and the published demo. Codex replaced every frontend HTML-string rendering assignment with DOM/text operations and added native action buttons, roving tabs, evidence focus and revised-plan focus. Source URLs still use the HTTP(S) allowlist. Browser suite runs the local fixture backend on port 8019 with the API key blank. Playwright starts and stops that server. Local launch remains uv run uvicorn app.main:app --host 127.0.0.1 --port 8016.
+
+Local verification before final rerun: 51 backend tests, 82% combined statement/branch coverage, 2 Node unit tests, 4 Chromium tests. Chromium verified keyboard navigation, evidence focus, literal commitment text, comparison/acceptance, invalid-time error, and zero axe violations on setup, today, home, sources and comparison at widths 1280px and 390px. Earlier contrast runs measured the page mid-fade. The current suite waits for finite animations and fonts. Security scan has zero high/critical findings and one medium pattern for non-security retry jitter. Added coverage and browser checks to CI; expanded README evidence. No submission action taken.
+
+Next three tasks: validate the final local build and publish safely, verify Render and CI on the new commit, and hand the reviewed form values to the user for attempt one. Uploaded demo remains https://youtu.be/KyVVyveKvt8. LinkedIn mentions were verified by Claude, and the real build photo still needs placement or organizer clarification.

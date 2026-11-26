@@ -23,10 +23,10 @@ How a plan is made:
 | Criterion | Implementation | Evidence |
 |---|---|---|
 | **Problem alignment** | Location-aware live air data; routines with preserved fixed times; indoor-air, exposure and sustainable-transport actions; explained trade-offs | Demo video; `app/rules.py`; `knowledge/actions.json` |
-| **Security** | Strict Content-Security-Policy (no inline script or style); no inline event handlers; all dynamic text HTML-escaped and only `http(s)` links rendered; 32 KiB request-body limit; typed and validated inputs; rate and concurrency limits; AI output validated against an allowlist; prompt-injection guard in the system instruction; upstream errors reduced to safe categories (no secrets or raw errors in responses or logs); `nosniff`, `DENY` framing, COOP, HSTS behind HTTPS | `app/security.py`, `app/planner.py`, `tests/test_hardening.py`, `tests/test_release.py` |
+| **Security** | Strict Content-Security-Policy on the product UI; dynamic content built as DOM nodes and text; only `http(s)` source links; 32 KiB body limit; rate and concurrency limits; validated AI action IDs and safe upstream error categories | `app/security.py`, `app/static/app.js`, `docs/security-scan.json`, browser tests |
 | **Efficiency** | 10-minute per-city cache of live air data (CAMS updates hourly); circuit breaker that sends requests to the backup model for 5 minutes after the primary fails; bounded 10 s per-call and 25 s total AI deadlines; one retry with jitter; ETag revalidation for static assets; reduced Gemini payload | `app/main.py`, `app/planner.py`, `tests/test_hardening.py` |
-| **Testing** | 51 pytest tests (API, rules, AI recovery, security headers, CSP-safe markup, caching, breaker) plus Node unit tests for the frontend helpers; CI runs lint, format check and both suites on every push | `tests/`, `.github/workflows/ci.yml` |
-| **Accessibility** | axe-core (WCAG 2.1 AA + best practices) reports 0 violations on every view at desktop and 390 px mobile; landmarks; labelled dialog; keyboard-operable tabs (arrow keys) and action cards (Enter/Space); live regions for status; reduced-motion support; AA text contrast | Audit method in `docs/verification.md` |
+| **Testing** | 51 backend tests with 82% combined statement and branch coverage in the latest local run, two frontend unit tests and four Chromium tests covering planning, comparison, errors and accessibility. CI runs these checks and publishes the backend coverage report. | `tests/`, `.github/workflows/ci.yml`, `docs/verification.md` |
+| **Accessibility** | Roving tab focus, native action buttons, labelled dialog with Escape and focus restoration, live regions and reduced-motion support. Automated axe-core checks reported zero violations across setup, plan, home, sources and comparison at 1280 and 390 px. | `tests/frontend/flow.spec.cjs`, `docs/verification.md` |
 | **Code quality** | Typed Pydantic schemas; small single-purpose modules; ruff lint and format clean; locked dependencies (`uv.lock`, hashed `requirements.txt`) | `pyproject.toml`, CI workflow |
 
 ## Run locally
@@ -42,12 +42,16 @@ copy .env.example .env   # add GEMINI_API_KEY locally; never commit it
 ### Tests and checks
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q -o asyncio_default_fixture_loop_scope=function
+uv run coverage run --branch --source=app -m pytest -q -o asyncio_default_fixture_loop_scope=function
+uv run coverage report -m
 node --test tests/frontend/app.test.js
-.\.venv\Scripts\python.exe -m ruff check app tests
+uv run ruff check app tests
+npm ci --ignore-scripts
+node ./node_modules/@playwright/test/cli.js install chromium
+node ./node_modules/@playwright/test/cli.js test
 ```
 
-Tests force fixture data and blank AI credentials, so they make no network or paid model calls.
+Tests force fixture data and blank AI credentials, so they make no external data or model calls. Browser tests launch and stop their own local fixture server. The automated accessibility checks cover the tested states and complement manual review.
 
 ## Assumptions and limits
 

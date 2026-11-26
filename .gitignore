@@ -42,3 +42,6 @@ htmlcov/
 *.zip
 *.tar.gz
 node_modules/
+test-results/
+playwright-report/
+coverage.xml

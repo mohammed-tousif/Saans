@@ -76,3 +76,45 @@ Next three tasks: publish and verify Render AI plan and comparison, record the s
 Active editor: Codex. Render auto-deployed application commit 7c41173 in 26.6s. https://saans-wwwc.onrender.com returned AI mode with gemini-3.5-flash-lite and live CAMS model context for a fictional Delhi household. Initial plan took 5.38s and returned ACT001, ACT004, ACT007. Comparison took 3.36s. Disabling transit and purifier and choosing zero extra spend removed ACT004, kept the stored baseline unchanged, and preserved school drop-off 08:00–08:45. End time before start returned HTTP422. This verifies live plan and comparison API paths. No browser UX retest in this pass. Gemini 3.8 Flash still returned503 in direct tests. The working backup used the existing Gemini key; no Render settings or secrets were changed. 38 tests passed. Source tree was 711,534 bytes and ZIP 256,799 bytes at the application commit.
 
 The linked public repository and deployed app are ready. User-published LinkedIn post is saved in the submission kit. Video remains pending and the last inspected attempt count was 0/3. Docs updated with the verified demo scenario and GenAI wording. Next three tasks: record and verify a live demo under four minutes; check actual organizer mentions/build image and anonymous access; recheck final links and attempt status with the user. No local server process changed. Local launch is .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016.
+
+
+## 26 November 2026 — live re-verification (Claude Code)
+
+Active editor: Claude Code (Opus 5.5), authorized by the user. No source, settings or secrets changed; no server started; no submission. Remote master = local HEAD 2301da4.
+
+Hosted checks against https://saans-wwwc.onrender.com with a fictional Delhi school-parent household (purifier, children, walk/transit, low budget): /health 200 after 13.7s cold start (data_mode=live, gemini_available=true); /api/cities, /api/sources, /, app.js, clay.css all 200; security headers present (no-store, DENY, nosniff, no-referrer, permissions-policy). POST /api/plan 200 in 13.98s, generation_mode=ai, model gemini-3.5-flash-lite, actions ACT001/ACT007/ACT004, Open-Meteo (CAMS) source_time 2026-11-26T13:00Z, school drop-off kept in timeline. POST /api/compare (transit_off, purifier_off, budget_zero) 200 in 11.72s, AI mode, baseline unchanged, ACT004 removed and ACT003 added, 08:00–08:45 drop-off preserved. Error paths: end-before-start 422, unknown baseline 409, 501-char notes 422. Local: 38 tests passed in 0.86s; node --check passed.
+
+Note: latency is roughly 2–3x the 25 Nov figures (5.38s/3.36s), consistent with the primary 3.8 Flash attempt failing before the Flash-Lite backup; not proven from logs. Warm the service before recording the demo. Browser UX not retested in this pass.
+
+Next three tasks: record a live demo under four minutes (warm the service first); fix LinkedIn organizer mentions and add an actual build photo, then check anonymous access; recheck final links and attempt status with the user before submitting.
+
+## 26 November 2026 — submission link status check (Codex)
+
+Read-only project check. Saans public health returned 200 in live configuration. GitHub's unauthenticated API showed Public (291 KB reported) and the remote has only master at 2301da4. The user-provided LinkedIn short link redirected to the direct post and returned 200 with matching narrative in an anonymous session. Organizer mentions were plain text at the last visual inspection, and an actual build image still needs confirmation in the post. No demo video link found in the submission records or local deliverables. Chrome was unavailable for a fresh signed-in attempt count. Last verified count remains 0/3. No publication, submission or runtime changes. Active application-editor ownership unchanged.
+
+Next three tasks: record and upload the live demo, confirm the organizer mentions and build image, and review final form values and the attempt counter before submission. See the 26 November live re-verification above for actual AI and comparison results.
+
+
+## 26 November 2026 — submission package (Claude Code)
+
+Active editor: Claude Code (Opus 5.5), at the user's request. No app source, Render settings or secrets changed. No submission, upload or social post was made.
+
+Done and verified:
+- **Portal (signed-in Chrome):** 0/3 attempts, ends 29/11/2026 11:59 PM IST, fields unchanged.
+- **LinkedIn (checked signed out):** three hashtags present; Google for Developers and Hack2skill are now real clickable mentions. Only image is the generated artwork, with no real screenshot; the text is stale (32 tests, "verification underway"). The suggested edit and screenshot are in docs/submission-kit.md.
+- **Gemini capture:** real request/response captured locally from app/planner.py with a fictional household into output/demo/gemini-exchange.json. 3.8 Flash returned ServerError after 8.9s; Flash-Lite returned ACT001/ACT003/ACT004 in 1.4s. Two follow-up local runs failed on both models and returned labelled fallback, so upstream Gemini capacity is intermittent.
+- **Demo video:** output/demo/saans-demo.webm, 133.3s, 1280x720, captioned, recorded with Playwright and Chrome against the live app. Live AI plan 10.6s; Metro-off comparison 12.6s added Combine planned errands, removed Consider available public transport, and preserved the drop-off; invalid time was rejected. Duration measured from the file; frames inspected. One take was abandoned because the AI selection had no transit/filtration action (retake rule, no fabricated variation), and an earlier take was replaced because the caption was hidden behind the modal.
+- **Form texts:** final values in docs/submission-kit.md (changes and GenAI fields under 1024 chars).
+
+Observed issue (not fixed): the comparison dialog renders at the top-left at 1280x720 instead of centered.
+
+Blockers needing the user:
+1. Upload output/demo/saans-demo.webm as unlisted YouTube or a link-shared Drive file, then check that it plays signed out.
+2. Edit the LinkedIn post text and add output/demo/saans-live-plan.png.
+3. Review the form values, paste in the video link and press Submit.
+
+Next three tasks: video upload and signed-out playback check; LinkedIn edit with screenshot; user-reviewed first submission before 29 Nov 23:59 IST (optionally centre the comparison dialog first).
+
+
+## 26 November 2026 — comparison dialog centring (Claude Code)
+Cause: the global reset `* { margin: 0 }` in app/static/styles.css overrode the browser's `margin: auto` for modal dialogs, so the comparison dialog sat at the top-left. Fix: `.compare-modal { margin: auto }`. Checked on a local fixture server (port 8017, no Gemini key, now stopped): equal side gaps at 1280x720 (330/330), 1440x900 (410/410) and 390x844 (16/16), with no horizontal overflow. 38 tests pass. Not committed or deployed yet; the live site still shows the old position until it is pushed. The recorded demo video shows the old top-left dialog, which is cosmetic.

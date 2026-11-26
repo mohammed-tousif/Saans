@@ -72,3 +72,21 @@ Next three tasks: publish and verify Render AI plan and comparison, record the s
 Active editor: Codex. Render auto-deployed application commit 7c41173 in 26.6s. https://saans-wwwc.onrender.com returned AI mode with gemini-3.5-flash-lite and live CAMS model context for a fictional Delhi household. Initial plan took 5.38s and returned ACT001, ACT004, ACT007. Comparison took 3.36s. Disabling transit and purifier and choosing zero extra spend removed ACT004, kept the stored baseline unchanged, and preserved school drop-off 08:00–08:45. End time before start returned HTTP422. This verifies live plan and comparison API paths. No browser UX retest in this pass. Gemini 3.8 Flash still returned503 in direct tests. The working backup used the existing Gemini key; no Render settings or secrets were changed. 38 tests passed. Source tree was 711,534 bytes and ZIP 256,799 bytes at the application commit.
 
 The linked public repository and deployed app are ready. User-published LinkedIn post is saved in the submission kit. Video remains pending and the last inspected attempt count was 0/3. Docs updated with the verified demo scenario and GenAI wording. Next three tasks: record and verify a live demo under four minutes; check actual organizer mentions/build image and anonymous access; recheck final links and attempt status with the user. No local server process changed. Local launch is .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8016.
+
+
+## 26 November 2026 — Claude Code
+Live re-verification only: hosted AI plan/compare and error paths pass; 38 tests pass. No code changes.
+
+## 26 November 2026 — submission link status check (Codex)
+
+Read-only project check. Saans public health returned 200 in live configuration. GitHub's unauthenticated API showed Public (291 KB reported) and the remote has only master at 2301da4. The user-provided LinkedIn short link redirected to the direct post and returned 200 with matching narrative in an anonymous session. Organizer mentions were plain text at the last visual inspection, and an actual build image still needs confirmation in the post. No demo video link found in the submission records or local deliverables. Chrome was unavailable for a fresh signed-in attempt count. Last verified count remains 0/3. No publication, submission or runtime changes. Active application-editor ownership unchanged.
+
+Next three tasks: record and upload the live demo, confirm the organizer mentions and build image, and review final form values and the attempt counter before submission. See the 26 November live re-verification above for actual AI and comparison results.
+
+
+## 26 November 2026 — Claude Code, submission package
+Recorded a 2:13 captioned demo of the live app (output/demo/saans-demo.webm), captured the real Gemini exchange, checked LinkedIn and the portal (0/3), and drafted the final form values. No source changes.
+
+
+## 26 November 2026 — comparison dialog centring (Claude Code)
+Cause: the global reset `* { margin: 0 }` in app/static/styles.css overrode the browser's `margin: auto` for modal dialogs, so the comparison dialog sat at the top-left. Fix: `.compare-modal { margin: auto }`. Checked on a local fixture server (port 8017, no Gemini key, now stopped): equal side gaps at 1280x720 (330/330), 1440x900 (410/410) and 390x844 (16/16), with no horizontal overflow. 38 tests pass. Not committed or deployed yet; the live site still shows the old position until it is pushed. The recorded demo video shows the old top-left dialog, which is cosmetic.

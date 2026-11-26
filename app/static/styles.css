@@ -1112,6 +1112,8 @@ input[type="range"] {
 
 /* === Compare Modal === */
 .compare-modal {
+  /* The global reset sets margin: 0, which removes the browser's centering for modal dialogs. */
+  margin: auto;
   border: none;
   border-radius: var(--radius-lg);
   padding: 0;

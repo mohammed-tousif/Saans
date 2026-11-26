@@ -7,8 +7,8 @@ from app import main, planner
 
 @pytest.fixture(autouse=True)
 def reset_process_state():
-    planner.reset_model_cooldown()
-    main._air_cache.clear()
+    planner.model_circuit_breaker.reset()
+    main.air_data_cache.reset()
     yield
-    planner.reset_model_cooldown()
-    main._air_cache.clear()
+    planner.model_circuit_breaker.reset()
+    main.air_data_cache.reset()

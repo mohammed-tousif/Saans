@@ -6,6 +6,7 @@ import abc
 import logging
 import math
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 
 import httpx
 
@@ -23,8 +24,16 @@ POLLUTANT_NAMES = {
     "carbon_monoxide": "CO",
 }
 POLLUTANT_UNIT = "µg/m³"
+# Accept readings up to three hours old and times up to an hour ahead.
 MAX_DATA_AGE = timedelta(hours=3)
 MAX_FUTURE_DRIFT = timedelta(hours=1)
+
+# Inclusive upper bounds for the European AQI bands reported by Open-Meteo.
+EUROPEAN_AQI_GOOD_MAX = 20
+EUROPEAN_AQI_FAIR_MAX = 40
+EUROPEAN_AQI_MODERATE_MAX = 60
+EUROPEAN_AQI_POOR_MAX = 80
+EUROPEAN_AQI_VERY_POOR_MAX = 100
 
 
 def _finite_number(value: object) -> float | None:
@@ -148,6 +157,7 @@ class OpenMeteoProvider(BaseProvider):
     ]
 
     def __init__(self, timeout: int = 10) -> None:
+        """Set the timeout in seconds for each provider request."""
         self.timeout = timeout
 
     async def fetch(self, latitude: float, longitude: float, label: str) -> EnvironmentalContext:
@@ -171,7 +181,7 @@ class OpenMeteoProvider(BaseProvider):
             raise ProviderError(f"Open-Meteo request timed out after {self.timeout}s") from error
         except httpx.HTTPStatusError as error:
             status = error.response.status_code
-            if status == 429:
+            if status == HTTPStatus.TOO_MANY_REQUESTS:
                 raise ProviderError(
                     "Open-Meteo rate limit exceeded. Please try again later."
                 ) from error
@@ -233,15 +243,15 @@ class OpenMeteoProvider(BaseProvider):
     @staticmethod
     def _european_aqi_category(value: float) -> str:
         """European AQI category labels. NOT Indian AQI."""
-        if value <= 20:
+        if value <= EUROPEAN_AQI_GOOD_MAX:
             return "Good"
-        if value <= 40:
+        if value <= EUROPEAN_AQI_FAIR_MAX:
             return "Fair"
-        if value <= 60:
+        if value <= EUROPEAN_AQI_MODERATE_MAX:
             return "Moderate"
-        if value <= 80:
+        if value <= EUROPEAN_AQI_POOR_MAX:
             return "Poor"
-        if value <= 100:
+        if value <= EUROPEAN_AQI_VERY_POOR_MAX:
             return "Very Poor"
         return "Extremely Poor"
 
@@ -250,6 +260,7 @@ class FixtureProvider(BaseProvider):
     """Returns synthetic fixture data for testing. Clearly labelled."""
 
     async def fetch(self, latitude: float, longitude: float, label: str) -> EnvironmentalContext:
+        """Return a labelled synthetic reading for a requested location."""
         now = datetime.now(timezone.utc)
         return EnvironmentalContext(
             provider="Fixture (synthetic test data)",
@@ -278,7 +289,7 @@ class FixtureProvider(BaseProvider):
 
 
 def get_provider(mode: str = "live", timeout: int = 10) -> BaseProvider:
-    """Factory for data providers."""
+    """Create a synthetic or live provider for the configured mode."""
     if mode == "fixture":
         return FixtureProvider()
     return OpenMeteoProvider(timeout=timeout)

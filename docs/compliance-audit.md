@@ -79,4 +79,4 @@ Instructions name code quality, security, efficiency, testing, accessibility and
 Suggested organizer question (not sent): For PromptWars Virtual Challenge 6, please confirm whether solo entries are eligible despite the linked generic 2–6 team rule, whether LinkedIn narrative alone satisfies the blog/article FAQ, and which event-specific terms supersede generic presentation/IP provisions. Please also confirm the current reward-credit expiry and challenge count.
 
 ## Later same-day verification
-User confirms solo participation valid. Hosted service now verified live at https://saans-wwwc.onrender.com, commit 40dc19e; actual model air data renders. AI still returns ServerError and labelled fallback. Deployment gate partially cleared; real AI gate remains. See latest HANDOFF checkpoint.
+User confirms solo participation valid. Hosted service now verified live at https://saans-wwwc.onrender.com, commit 40dc19e; actual model air data renders. AI still returns ServerError and labelled fallback. Deployment gate partially cleared; real AI gate remains. See the latest [handoff checkpoint](process/HANDOFF.md).

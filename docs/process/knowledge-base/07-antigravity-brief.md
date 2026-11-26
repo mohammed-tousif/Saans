@@ -6,7 +6,7 @@ Paste the following into Google Antigravity after opening the project folder. Th
 
 ---
 
-Build Saans, a mobile-first Urban Air Quality Assistant for PromptWars Challenge 06. First read KNOWLEDGE_BASE.md and all linked knowledge-base documents. Treat proposed features as design decisions and unresolved rules as unresolved; never fabricate organizer requirements.
+Build Saans, a mobile-first Urban Air Quality Assistant for PromptWars Challenge 06. First read [KNOWLEDGE_BASE.md](../KNOWLEDGE_BASE.md) and its linked research. Treat proposed features as design decisions and unresolved rules as unresolved; never fabricate organizer requirements.
 
 The product helps Indian households turn local environmental information, routines, budget, available transport and indoor resources into practical daily actions. The core demonstration is a plan that changes meaningfully when the user changes a constraint.
 

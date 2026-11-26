@@ -152,8 +152,8 @@ def client(monkeypatch):
     monkeypatch.setattr(settings, "data_mode", "fixture")
     monkeypatch.setattr(settings, "gemini_api_key", "")
     monkeypatch.setattr(settings, "max_plan_requests_per_minute", 100)
-    main._snapshots.clear()
-    main._request_times.clear()
+    main.snapshot_store.reset()
+    main.planning_limiter.reset()
     with TestClient(main.app) as client:
         yield client
 
@@ -219,7 +219,7 @@ def test_rate_limit_enforced(client, monkeypatch):
     body = {"profile": {"city": "delhi"}}
     assert client.post("/api/plan", json=body).status_code == 200
     assert client.post("/api/plan", json=body).status_code == 429
-    assert main._active == 0
+    assert main.planning_limiter.active_count == 0
 
 
 def test_unavailable_provider_is_labelled(client, monkeypatch):

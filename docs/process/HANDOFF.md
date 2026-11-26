@@ -1,5 +1,42 @@
 # Saans shared handoff
 
+## 26 November 2026 — attempt three candidate verified locally
+
+- Active editor: Codex. Baseline: f10d5d6. The user reported attempt two at 96.05 overall, with Code Quality still 86. Two of three attempts are used.
+- Moved 13 process files, kept root AGENTS.md and repaired links. Added 58 Python docstrings and 53 net new JSDoc blocks. Four classes own the limiter, snapshots, air cache and model cooldown. No global statements remain in app/.
+- Passed Ruff lint and format, ANN201, mypy, 73 backend tests at 90% coverage with coverage XML, both frontend unit tests, ESLint, Prettier and all six Chromium tests, including axe at 1280 and 390 px. Prior backend baseline was 64 tests at 88%.
+- All 8,192 ordered action-ID lists, the OpenAPI JSON and CSP matched f10d5d6. All five JavaScript syntax trees matched. Checked static sink and inline-markup restrictions and moved Markdown links.
+- No persistent local server was started. Launch and verification commands are in the README. CI and Render verification are pending publication. The submission is the user's decision.
+- Next: commit and push the verified candidate to master, check CI on the exact SHA, then verify Render assets, health, caching and one live AI plan.
+
+## 26 November 2026 — attempt 2 submitted (Claude Code)
+The user explicitly said "Yes, submit attempt 2". Before submitting, the counter showed 1/3 and Attempt 1 at 95.72, and the form was pre-filled with the attempt 1 values. Claude Code replaced only the changes field with the prepared attempt-2 text (722/1024) and kept the GenAI text (641/1024) and all links. A JavaScript read-back showed all seven values exactly matching. The confirmation dialog repeated the plagiarism-check agreement (the same terms the user approved for attempt 1); Claude Code ticked it as part of the requested submission and submitted. The portal showed "Submission submitted successfully!" (attempt 2), and the counter is now **2/3** with Attempt 2 evaluating. Code at submission: f10d5d6 (live, CI passing). One attempt remains.
+Next three tasks: read the attempt 2 score and compare it with attempt 1 per criterion (Code Quality 86 was the target); decide with the user whether a justified fix merits the last attempt; if so, fix, verify live and submit before 29 Nov 23:59 IST.
+
+
+## 26 November 2026 — independent review of Codex f10d5d6 (Claude Code)
+Attempt 1 scored 95.72 (Code Quality 86, Security 98, Efficiency 100, Testing 96, Accessibility 99, Problem Alignment 99). At the user's request, Claude Code independently re-verified Codex's refactor commit f10d5d6. Claude Code made no code changes.
+- **Checks rerun locally:** ruff lint and format clean, mypy clean (9 files), 64 pytest passed, 88% branch coverage, 2 Node unit tests, ESLint and Prettier clean, 6 Playwright Chromium tests passed (axe at 1280 and 390 px, stale-response and expired-comparison cases).
+- **Behavior equivalence:** filter_eligible_actions gave identical IDs and order for all **8,192** profile combinations versus 8f9c8a5 (budget, resources, fuel, household needs, 4 transport sets, fresh and stale air).
+- **Complexity:** the most complex Python function went from 29 to 8; functions over 10 went from 3 to 0. app.js (856 lines) is now 5 ES modules (997 lines). 3 JS functions exceed complexity 8, but all are under the ESLint cap of 12.
+- **No regressions on other criteria:** no innerHTML/eval sinks; strict CSP and the http(s) allowlist intact; air cache, breaker and static ETag intact; axe runs in CI. One public branch (master); about 1 MB of tracked files; no .env, media or node_modules committed; the Dockerfile copies the new modules.
+- **CI and live:** CI passed on f10d5d6. All 5 live JS modules match the commit (md5). A live browser run gave an AI plan (gemini-3.5-flash-lite); Metro-unavailable removed the public transport action, added combined errands, and preserved both school commitments, with no console errors. The UI matches the demo video.
+- **Attempt-2 text** in docs/submission-kit.md (722/1024) is accurate against these measurements.
+Next three tasks: the user decides on attempt 2 (1/3 used) with the prepared text; compare its feedback with attempt 1; keep attempt 3 for a justified fix before 29 Nov 23:59 IST.
+
+
+## 26 November 2026 — code quality release live (Codex)
+
+Active editor: Codex completed this pass. Commit f10d5d6d4aa1b5e4d4a2da676afd57676e302961 is on GitHub master. README.md now documents the style rules, code layout, every refactor area and the verification path for the next editor. The packed Git history reachable from master was 402,092 bytes, under the 10 MB limit. Local media stays outside Git.
+
+GitHub CI passed for this exact commit: https://github.com/mohammed-tousif/Saans/actions/runs/45865377825. Local checks recorded 64 backend tests, 88% combined statement/branch coverage, two Node unit tests, six Chromium tests, Ruff, mypy, ESLint and Prettier. The candidate preserved action IDs and their ordering across 896 eligibility combinations compared with 8f9c8a5. Fixture server port 8019 was started and stopped by Playwright. No production settings changed.
+
+Render at https://saans-wwwc.onrender.com served all five module files byte-for-byte from this commit and the homepage used the module entry point with the existing strict CSP. Live planning and comparison returned Gemini 3.5 Flash-Lite AI results using live CAMS data. Comparison preserved the stored original and 08:00–08:45 school drop-off, and excluded public transit and purifier actions after those resources were removed. Full browser flow was tested in CI against fixtures.
+
+Attempt one remains 95.72/100, Code Quality 86, with 1/3 used at the last observed counter. This release has no evaluation score yet and no further attempt was made. The 722-character attempt-two changes text in docs/submission-kit.md matches the release. App, demo and LinkedIn links are the same.
+
+Next three tasks: review this candidate and the prepared form text with the user; if they proceed, verify the portal counter and make attempt two with explicit authorization; compare feedback with attempt one and reserve the last attempt for a justified fix. Deadline 29 November 2026 at 23:59 IST.
+
 ## 26 November 2026 — attempt 1 submitted (Claude Code)
 The user's own words asked for any corrections and then submission. Before submitting, Claude Code checked that commit 8f9c8a5 (Codex: HTML rendering sinks removed, browser tests added) is on origin master and live on Render. CI passed and its log confirms 51 backend tests, 2 Node unit tests, 82% backend coverage and 4 Chromium tests. The form was blank (0/3). Claude Code filled all seven fields with the user's supplied values in the signed-in Chrome and read them back: every value matched exactly, changes 781/1024, GenAI 641/1024, LinkedIn post unchanged. No corrections were needed. Submit opened a dialog requiring agreement to a plagiarism check (disqualification if plagiarism is found). Claude Code paused, and the user explicitly said "Yes, agree and submit". Claude Code ticked the box and submitted. The portal showed "Submission submitted successfully!" (attempt 1), and the counter is now **1/3** with Attempt 1 Analyzing. The rank shown before submitting was #716/56290 (it doesn't yet reflect this attempt). Next three tasks: read the attempt 1 score and AI feedback once analysis finishes; fix exactly what the feedback names, with tests, and redeploy; use attempt 2 only after the fixes are verified live, and keep attempt 3 in reserve (closes 29 Nov 23:59 IST).
 
@@ -189,7 +226,7 @@ Latest changes are in app/static/index.html, app/static/app.js and app/static/st
 2. Correct app.js's banner to describe configured mode, not verified availability: /health reports settings; actual fetches may fail or be stale. Browser-test both modes, mobility input, repeated generation and changed profiles.
 3. Configure Gemini locally and verify real AI behavior, then continue deployment/release work. The rest of the original release gaps remain; this is a small frontend increment, not a completed application.
 
-Coordination records were not updated by the follow-up session: HANDOFF/TASKS/docs still reflected the prior Codex checkpoint. This review updates them now. Never infer completion from an exhausted quota.
+Coordination records were not updated by the follow-up session: handoff, task and verification records still reflected the prior Codex checkpoint. This review updates them now. Never infer completion from an exhausted quota.
 
 ## Previous checkpoint (historical)
 
@@ -232,7 +269,7 @@ Local verification server used PID 29240, tool session 15014, port 8016; it is b
 
 ## Coordination
 
-Read AGENTS.md, KNOWLEDGE_BASE.md, knowledge-base/09-grounding-and-corrections.md, TASKS.md and docs/verification.md. Continue from real code, not earlier completion claims. Update these files every meaningful chunk and before stopping. User last reported 35% quota remaining; Codex cannot independently read its quota percentage.
+From the repository root, read AGENTS.md, docs/process/KNOWLEDGE_BASE.md, docs/process/knowledge-base/09-grounding-and-corrections.md, docs/process/TASKS.md and docs/verification.md. Continue from real code, not earlier completion claims. Update these files every meaningful chunk and before stopping. User last reported 35% quota remaining; Codex cannot independently read its quota percentage.
 
 Recovery deployment verified: commit9b97827 pushed to master; Render marks it Live (35.1s build). Final hosted fictional request returned200 in14.77s, fallback, and new explicit Google service unavailable warning. Application-side recovery fix is deployed; successful real AI remains externally blocked. No claims of complete resolution. Initial pre-rollout request returned old generic warning; final result supersedes it. Next three tasks: verify Google recovery or a proven accessible alternative; finish product/demo gaps; correct LinkedIn real mentions/build image and final submission material. No submission attempted.
 

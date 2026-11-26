@@ -8,28 +8,50 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, GetJsonSchemaHandler, model_validator
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
+
+
+class _InternalSchemaDocs:
+    """Keep new developer docstrings out of existing public schema definitions."""
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        """Generate the original schema shape without a description."""
+        schema = handler(core_schema)
+        handler.resolve_ref_schema(schema).pop("description", None)
+        return schema
+
 
 # --- Enums ---
 
 
-class DataSourceKind(str, enum.Enum):
+class DataSourceKind(_InternalSchemaDocs, str, enum.Enum):
+    """Classify the provenance of an environmental record."""
+
     OBSERVATION = "observation"
     MODEL = "model"
     FIXTURE = "fixture"
     UNAVAILABLE = "unavailable"
 
 
-class BudgetBand(str, enum.Enum):
+class BudgetBand(_InternalSchemaDocs, str, enum.Enum):
+    """Represent household spending bands in ascending cost order."""
+
     ZERO = "zero"
     LOW = "low"  # under ₹500/month
     MODERATE = "moderate"  # ₹500–2000/month
     FLEXIBLE = "flexible"  # above ₹2000/month
 
 
-class TransportMode(str, enum.Enum):
+class TransportMode(_InternalSchemaDocs, str, enum.Enum):
+    """Enumerate the transport options a household can report."""
+
     WALK = "walk"
     CYCLE = "cycle"
     PUBLIC_TRANSIT = "public_transit"
@@ -39,13 +61,17 @@ class TransportMode(str, enum.Enum):
     WORK_FROM_HOME = "work_from_home"
 
 
-class ActionPurpose(str, enum.Enum):
+class ActionPurpose(_InternalSchemaDocs, str, enum.Enum):
+    """Identify whether an action targets exposure, emissions or both."""
+
     EXPOSURE = "exposure"
     EMISSIONS = "emissions"
     BOTH = "both"
 
 
-class PlanGenerationMode(str, enum.Enum):
+class PlanGenerationMode(_InternalSchemaDocs, str, enum.Enum):
+    """Identify how the planner selected its actions."""
+
     AI = "ai"
     FALLBACK = "fallback"
     FIXTURE = "fixture"
@@ -54,7 +80,9 @@ class PlanGenerationMode(str, enum.Enum):
 # --- Environmental Data ---
 
 
-class Pollutant(BaseModel):
+class Pollutant(_InternalSchemaDocs, BaseModel):
+    """Represent a pollutant value with its unit and averaging period."""
+
     name: str
     value: float
     unit: str
@@ -98,7 +126,12 @@ class RoutineBlock(BaseModel):
     location: str = "outdoor"  # indoor/outdoor/commute
 
     @model_validator(mode="after")
-    def validate_order(self):
+    def validate_order(self) -> Self:
+        """Validate the same-day time range and return this routine block.
+
+        Raises:
+            ValueError: The end time is at or before the start time.
+        """
         if self.end_time <= self.start_time:
             raise ValueError("End time must follow start time on the same day")
         return self
@@ -181,13 +214,17 @@ class PlanResponse(BaseModel):
 # --- API Request/Response Models ---
 
 
-class AirQualityRequest(BaseModel):
+class AirQualityRequest(_InternalSchemaDocs, BaseModel):
+    """Describe a city and optional coordinates for an air-quality request."""
+
     city: str = Field(..., min_length=1, max_length=100)
     latitude: float | None = None
     longitude: float | None = None
 
 
-class PlanRequest(BaseModel):
+class PlanRequest(_InternalSchemaDocs, BaseModel):
+    """Carry a household profile and legacy comparison fields."""
+
     profile: HouseholdProfile
     constraint_changes: list[str] = []
     previous_plan_fingerprint: str = ""
@@ -205,13 +242,17 @@ ConstraintChange = Literal[
 ]
 
 
-class CompareRequest(BaseModel):
+class CompareRequest(_InternalSchemaDocs, BaseModel):
+    """Identify the baseline and constrained changes to compare."""
+
     profile: HouseholdProfile
     baseline_plan_id: str = Field(min_length=1, max_length=64)
     changed_constraints: list[ConstraintChange] = Field(min_length=1, max_length=8)
 
 
-class CompareResponse(BaseModel):
+class CompareResponse(_InternalSchemaDocs, BaseModel):
+    """Return both plans, the revised profile and qualitative differences."""
+
     original_plan: PlanResponse
     revised_plan: PlanResponse
     changes_summary: list[str] = []
@@ -233,7 +274,9 @@ class SourceRecord(BaseModel):
     limitations: str = ""
 
 
-class HealthStatus(BaseModel):
+class HealthStatus(_InternalSchemaDocs, BaseModel):
+    """Report basic server and provider configuration status."""
+
     status: str = "ok"
     data_mode: str = "live"
     gemini_available: bool = False

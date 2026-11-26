@@ -59,11 +59,11 @@ Tests force fixture data and blank AI credentials, so they make no external data
 
 ## Code style and structure
 
-Python follows [PEP 8](https://peps.python.org/pep-0008/) naming and indentation with this repository's 100-column limit. Ruff checks formatting, names, imports, common bugs and a complexity limit of 10. Mypy checks application code, including bodies of unannotated functions. Use type annotations on interfaces and give each function one responsibility.
+Python follows [PEP 8](https://peps.python.org/pep-0008/) naming and indentation with this repository's 100-column limit. Ruff checks formatting, names, imports, common bugs, Google-style docstrings, named comparison thresholds and a complexity limit of 10. Mypy checks application code, including bodies of unannotated functions. Use type annotations on interfaces and give each function one responsibility.
 
 JavaScript uses native modules, camelCase names, two-space indentation and single quotes. Prettier fixes formatting. ESLint checks undefined and unused names, common control-flow mistakes and a complexity limit of 12 for browser code. Use comments to explain decisions and constraints that the code cannot express by itself.
 
-- app/rules.py handles catalogue eligibility and ordering. app/providers.py normalizes external air data. app/planner.py prepares reviewed plans and calls Gemini. app/main.py owns the HTTP routes and their temporary state.
+- app/rules.py handles catalogue eligibility and ordering. app/providers.py normalizes external air data. app/planner.py prepares reviewed plans and calls Gemini. app/main.py owns the HTTP routes and app/planning_state.py owns request admission, comparison snapshots and the air-data cache.
 - app/static/app.js coordinates the UI. api.js owns JSON requests and HTTP errors, profile.js owns form inputs, views.js renders results, and dom.js owns safe element and link helpers.
 
 CI runs the static checks, backend coverage and browser tests from a clean checkout. Browser tests use fixture data so they can reproduce stale-response, comparison, accessibility and validation cases without Gemini.
@@ -88,8 +88,21 @@ Attempt one used commit 8f9c8a5. The 26 November refactor keeps the same catalog
 | Frontend | app.js coordinates requests and state. api.js handles JSON requests and errors, profile.js owns the form, views.js renders results, and dom.js builds safe elements. A successful response updates the plan and its profile together. | Chromium covers planning, comparison, keyboard navigation, validation, accessibility, a response arriving after a profile edit, and expired comparisons. |
 | Automated checks | CI now enforces Ruff naming and complexity rules, mypy type checking, ESLint and Prettier. The backend and browser suites use controlled fixtures. | 64 backend tests, 88% backend coverage, two frontend unit tests and six Chromium tests passed locally before publication. CI runs the same checks on pushes. |
 
-For the next editor, start with [HANDOFF.md](HANDOFF.md) for the currently deployed commit, live verification, competition status and the next tasks. Use [docs/verification.md](docs/verification.md) for dated test results and [docs/submission-kit.md](docs/submission-kit.md) for the form text.
+For the next editor, start with [HANDOFF.md](docs/process/HANDOFF.md) for the currently deployed commit, live verification, competition status and the next tasks. Use [docs/verification.md](docs/verification.md) for dated test results and [docs/submission-kit.md](docs/submission-kit.md) for the form text.
 
-## Project records
+## What changed after attempt two
 
-`DESIGN.md` covers trust boundaries; `docs/verification.md` holds dated evidence; `docs/release.md` covers hosting; `HANDOFF.md` and `TASKS.md` track work in progress.
+- Moved the handoff, task list, Antigravity prompt and research into `docs/process/`. `AGENTS.md` remains the workspace entry point.
+- Documented the Python interfaces and five JavaScript modules. Ruff now enforces Google-style docstrings and named comparison values in application code. Mypy and the frontend checks still run in CI.
+- Moved rolling request limits, plan snapshots, air-data caching and the Gemini cooldown into four typed state classes. Tests exercise cancellation, exact expiry times, first-in eviction and model recovery.
+- Compared with `f10d5d6` across 8,192 profiles and air-data scenarios. Every ordered list of eligible action IDs matched. The OpenAPI schema, CSP and the executable JavaScript syntax trees also matched. The local suite passed 73 backend tests at 90% coverage, two frontend unit tests and all six Chromium tests, including desktop and mobile accessibility.
+
+## Repository layout
+
+- `app/` contains the FastAPI service and browser modules.
+- `knowledge/` contains the reviewed action catalogue and evidence records loaded by the app.
+- `tests/` contains the Python, Node and Chromium suites.
+- `docs/` contains release, verification and submission records. `docs/process/` holds development handoff records and research.
+- `.github/` contains the GitHub Actions workflow.
+
+`DESIGN.md` describes the architecture and trust boundaries. The [task list](docs/process/TASKS.md) tracks outstanding work.

@@ -20,7 +20,7 @@ Three frontend additions inferred from source/timestamp differences: mobility ch
 Codex inspected newer November 22 planner/config/privacy changes without overwriting them. Corrected remaining privacy and sample-mode text, refreshed obsolete knowledge-base status, ran regression and syntax checks, made two bounded fictional-input Gemini checks, and synchronized shared handoff records. Upstream failure remains; no server left running.
 
 
-24 Nov release pass (Codex): official signed-in Challenge 6 form and deadline verified; see HANDOFF. Model metadata succeeds but live generation still fails safely. Release preparation in progress.
+24 Nov release pass (Codex): official signed-in Challenge 6 form and deadline verified; see [HANDOFF.md](process/HANDOFF.md). Model metadata succeeds but live generation still fails safely. Release preparation in progress.
 
 
 ## 24 November 2026 — release checkpoint
@@ -166,3 +166,37 @@ Active editor: Codex. Refactored eligibility, CAMS parsing, request buffering an
 CI now enforces Ruff naming, bug and complexity rules, mypy, ESLint and Prettier in addition to tests. Local checks passed: 64 backend tests with 88% combined statement/branch coverage, two Node unit tests, six Chromium tests including the desktop and mobile axe checks. A separate 896-combination check matched the submitted eligibility order. Source pattern scanner found zero high/critical findings and the same retry-jitter medium flag. Fixture port 8019 was managed by Playwright. Production runtime dependencies unchanged. README, DESIGN and the attempt-two changes draft are current.
 
 Next three tasks: stage and publish the verified candidate to master, confirm CI and Render/live AI and check the public repository size, then review whether to spend attempt two. No attempt consumed in this pass.
+
+## 26 November 2026 — code quality release live (Codex)
+
+Active editor: Codex completed this pass. Commit f10d5d6d4aa1b5e4d4a2da676afd57676e302961 is on GitHub master. README.md now documents the style rules, code layout, every refactor area and the verification path for the next editor. The packed Git history reachable from master was 402,092 bytes, under the 10 MB limit. Local media stays outside Git.
+
+GitHub CI passed for this exact commit: https://github.com/mohammed-tousif/Saans/actions/runs/45865377825. Local checks recorded 64 backend tests, 88% combined statement/branch coverage, two Node unit tests, six Chromium tests, Ruff, mypy, ESLint and Prettier. The candidate preserved action IDs and their ordering across 896 eligibility combinations compared with 8f9c8a5. Fixture server port 8019 was started and stopped by Playwright. No production settings changed.
+
+Render at https://saans-wwwc.onrender.com served all five module files byte-for-byte from this commit and the homepage used the module entry point with the existing strict CSP. Live planning and comparison returned Gemini 3.5 Flash-Lite AI results using live CAMS data. Comparison preserved the stored original and 08:00–08:45 school drop-off, and excluded public transit and purifier actions after those resources were removed. Full browser flow was tested in CI against fixtures.
+
+Attempt one remains 95.72/100, Code Quality 86, with 1/3 used at the last observed counter. This release has no evaluation score yet and no further attempt was made. The 722-character attempt-two changes text in docs/submission-kit.md matches the release. App, demo and LinkedIn links are the same.
+
+Next three tasks: review this candidate and the prepared form text with the user; if they proceed, verify the portal counter and make attempt two with explicit authorization; compare feedback with attempt one and reserve the last attempt for a justified fix. Deadline 29 November 2026 at 23:59 IST.
+
+
+## 26 November 2026 — independent review of Codex f10d5d6 (Claude Code)
+Attempt 1 scored 95.72 (Code Quality 86, Security 98, Efficiency 100, Testing 96, Accessibility 99, Problem Alignment 99). At the user's request, Claude Code independently re-verified Codex's refactor commit f10d5d6. Claude Code made no code changes.
+- **Checks rerun locally:** ruff lint and format clean, mypy clean (9 files), 64 pytest passed, 88% branch coverage, 2 Node unit tests, ESLint and Prettier clean, 6 Playwright Chromium tests passed (axe at 1280 and 390 px, stale-response and expired-comparison cases).
+- **Behavior equivalence:** filter_eligible_actions gave identical IDs and order for all **8,192** profile combinations versus 8f9c8a5 (budget, resources, fuel, household needs, 4 transport sets, fresh and stale air).
+- **Complexity:** the most complex Python function went from 29 to 8; functions over 10 went from 3 to 0. app.js (856 lines) is now 5 ES modules (997 lines). 3 JS functions exceed complexity 8, but all are under the ESLint cap of 12.
+- **No regressions on other criteria:** no innerHTML/eval sinks; strict CSP and the http(s) allowlist intact; air cache, breaker and static ETag intact; axe runs in CI. One public branch (master); about 1 MB of tracked files; no .env, media or node_modules committed; the Dockerfile copies the new modules.
+- **CI and live:** CI passed on f10d5d6. All 5 live JS modules match the commit (md5). A live browser run gave an AI plan (gemini-3.5-flash-lite); Metro-unavailable removed the public transport action, added combined errands, and preserved both school commitments, with no console errors. The UI matches the demo video.
+- **Attempt-2 text** in docs/submission-kit.md (722/1024) is accurate against these measurements.
+Next three tasks: the user decides on attempt 2 (1/3 used) with the prepared text; compare its feedback with attempt 1; keep attempt 3 for a justified fix before 29 Nov 23:59 IST.
+
+
+## 26 November 2026 — attempt 2 submitted (Claude Code)
+The user explicitly said "Yes, submit attempt 2". Before submitting, the counter showed 1/3 and Attempt 1 at 95.72, and the form was pre-filled with the attempt 1 values. Claude Code replaced only the changes field with the prepared attempt-2 text (722/1024) and kept the GenAI text (641/1024) and all links. A JavaScript read-back showed all seven values exactly matching. The confirmation dialog repeated the plagiarism-check agreement (the same terms the user approved for attempt 1); Claude Code ticked it as part of the requested submission and submitted. The portal showed "Submission submitted successfully!" (attempt 2), and the counter is now **2/3** with Attempt 2 evaluating. Code at submission: f10d5d6 (live, CI passing). One attempt remains.
+Next three tasks: read the attempt 2 score and compare it with attempt 1 per criterion (Code Quality 86 was the target); decide with the user whether a justified fix merits the last attempt; if so, fix, verify live and submit before 29 Nov 23:59 IST.
+
+26 November (Codex): Moved 13 process and research files, repaired their references, added the README layout and documented the five JavaScript modules. Preparing the Python state and documentation changes.
+
+26 November (Codex): Moved mutable planning state into four process-local classes and added expiry, eviction, admission and recovery tests. Documented Python interfaces and named comparison thresholds.
+
+26 November (Codex): Completed the attempt-three local checks and wrote the verified changes-field text. The exact-commit CI and hosted checks follow publication.

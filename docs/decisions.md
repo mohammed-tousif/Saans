@@ -2,7 +2,7 @@
 
 ## 18–19 November 2026 — Codex repair pass
 
-1. Canonical shared resume record is HANDOFF.md. Every agent updates it after meaningful chunks; quota readings are not assumed available.
+1. Canonical shared resume record is [HANDOFF.md](process/HANDOFF.md). Every agent updates it after meaningful chunks; quota readings are not assumed available.
 2. Use constrained AI action ranking plus curated factual explanations. Do not render model-generated health claims or evidence IDs. This is a deliberate scope reduction pending stronger validation.
 3. Disable eight inherited advice records pending claim-level review; narrow seven enabled records. Do not re-enable merely to make the demo more impressive.
 4. Apply typed constraint codes to the real household profile. Store bounded temporary baselines so comparisons use the actual original plan.
@@ -20,7 +20,7 @@ Do not attribute the whole working-tree diff to Antigravity: it includes prior C
 Preserve the inherited reduced Gemini payload and strict local response validation. Disclose all shared household-needs categories and temporary server snapshots. Configuration is not evidence of data availability or model success. An HTTP 503 is not enough to conclude a model ID is invalid; do not silently replace it on that evidence.
 
 
-24 Nov release pass (Codex): official signed-in Challenge 6 form and deadline verified; see HANDOFF. Model metadata succeeds but live generation still fails safely. Release preparation in progress.
+24 Nov release pass (Codex): official signed-in Challenge 6 form and deadline verified; see [HANDOFF.md](process/HANDOFF.md). Model metadata succeeds but live generation still fails safely. Release preparation in progress.
 
 
 ## 24 November 2026 — release checkpoint
@@ -135,3 +135,21 @@ Active editor: Codex. Refactored eligibility, CAMS parsing, request buffering an
 CI now enforces Ruff naming, bug and complexity rules, mypy, ESLint and Prettier in addition to tests. Local checks passed: 64 backend tests with 88% combined statement/branch coverage, two Node unit tests, six Chromium tests including the desktop and mobile axe checks. A separate 896-combination check matched the submitted eligibility order. Source pattern scanner found zero high/critical findings and the same retry-jitter medium flag. Fixture port 8019 was managed by Playwright. Production runtime dependencies unchanged. README, DESIGN and the attempt-two changes draft are current.
 
 Next three tasks: stage and publish the verified candidate to master, confirm CI and Render/live AI and check the public repository size, then review whether to spend attempt two. No attempt consumed in this pass.
+
+## 26 November 2026 — code quality release live (Codex)
+
+Active editor: Codex completed this pass. Commit f10d5d6d4aa1b5e4d4a2da676afd57676e302961 is on GitHub master. README.md now documents the style rules, code layout, every refactor area and the verification path for the next editor. The packed Git history reachable from master was 402,092 bytes, under the 10 MB limit. Local media stays outside Git.
+
+GitHub CI passed for this exact commit: https://github.com/mohammed-tousif/Saans/actions/runs/45865377825. Local checks recorded 64 backend tests, 88% combined statement/branch coverage, two Node unit tests, six Chromium tests, Ruff, mypy, ESLint and Prettier. The candidate preserved action IDs and their ordering across 896 eligibility combinations compared with 8f9c8a5. Fixture server port 8019 was started and stopped by Playwright. No production settings changed.
+
+Render at https://saans-wwwc.onrender.com served all five module files byte-for-byte from this commit and the homepage used the module entry point with the existing strict CSP. Live planning and comparison returned Gemini 3.5 Flash-Lite AI results using live CAMS data. Comparison preserved the stored original and 08:00–08:45 school drop-off, and excluded public transit and purifier actions after those resources were removed. Full browser flow was tested in CI against fixtures.
+
+Attempt one remains 95.72/100, Code Quality 86, with 1/3 used at the last observed counter. This release has no evaluation score yet and no further attempt was made. The 722-character attempt-two changes text in docs/submission-kit.md matches the release. App, demo and LinkedIn links are the same.
+
+Next three tasks: review this candidate and the prepared form text with the user; if they proceed, verify the portal counter and make attempt two with explicit authorization; compare feedback with attempt one and reserve the last attempt for a justified fix. Deadline 29 November 2026 at 23:59 IST.
+
+26 November (Codex): Development records now live in docs/process. The root AGENTS.md remains the entry point. The frontend documentation preserves the f10d5d6 executable syntax trees.
+
+26 November (Codex): Keep one state owner per process, retain the existing admission and freshness boundaries, and use injected monotonic clocks in tests. Keep the broad AI fallback at the SDK and validation boundary.
+
+26 November (Codex): Preserve exact OpenAPI descriptions by excluding the new developer-only docstrings from previously undescribed route and schema definitions. Allow literal expected values in tests while enforcing named comparison values in application code.

@@ -70,11 +70,15 @@ def _replay_body(body: bytes, receive: Receive) -> Receive:
 
 
 class RequestGuards:
+    """Enforce request size limits and attach response security headers."""
+
     def __init__(self, app: ASGIApp, max_bytes: int = 32_768) -> None:
+        """Wrap the downstream ASGI app with a body-size limit in bytes."""
         self.app = app
         self.max_bytes = max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Guard HTTP requests and pass other ASGI scopes through."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

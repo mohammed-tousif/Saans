@@ -2,11 +2,6 @@
 
 from __future__ import annotations
 
-import time
-import uuid
-from collections import OrderedDict, deque
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app.cities import get_city, list_cities
 from app.config import settings
 from app.planner import generate_plan, profile_fingerprint
+from app.planning_state import AirDataCache, PlanningLimiter, SnapshotStore
 from app.providers import ProviderError, get_provider
 from app.rules import load_sources
 from app.schemas import (
@@ -36,64 +32,22 @@ from app.security import RequestGuards
 app = FastAPI(title="Saans", version="0.1.0")
 app.add_middleware(RequestGuards)
 STATIC_DIR = Path(__file__).parent / "static"
-# Process-local, bounded, expiring snapshots; opaque IDs act as temporary capabilities.
-_snapshots: OrderedDict[str, tuple[float, HouseholdProfile, PlanResponse]] = OrderedDict()
-_request_times: deque[float] = deque()
-_active = 0
-
-
-def remember(profile: HouseholdProfile, plan: PlanResponse) -> PlanResponse:
-    prune_snapshots()
-    plan.plan_id = uuid.uuid4().hex
-    _snapshots[plan.plan_id] = (
-        time.monotonic(),
-        profile.model_copy(deep=True),
-        plan.model_copy(deep=True),
-    )
-    while len(_snapshots) > 100:
-        _snapshots.popitem(last=False)
-    return plan
-
-
-def prune_snapshots() -> None:
-    for key, (created, _, _) in list(_snapshots.items()):
-        if time.monotonic() - created > 1800:
-            del _snapshots[key]
-
-
-@asynccontextmanager
-async def planning_slot() -> AsyncIterator[None]:
-    global _active
-    now = time.monotonic()
-    while _request_times and now - _request_times[0] >= 60:
-        _request_times.popleft()
-    if (
-        _active >= settings.max_concurrent_gemini_calls
-        or len(_request_times) >= settings.max_plan_requests_per_minute
-    ):
-        raise HTTPException(429, "Planning is busy. Please try again shortly.")
-    _request_times.append(now)
-    _active += 1
-    try:
-        yield
-    finally:
-        _active -= 1
-
-
-# CAMS model data updates hourly, so reuse a successful live fetch per city briefly
-# instead of calling Open-Meteo again for every plan and comparison.
-AIR_CACHE_SECONDS = 600
-_air_cache: dict[str, tuple[float, EnvironmentalContext]] = {}
+# FastAPI treats a form feed as the end of the published operation description.
+_END_OPENAPI_DESCRIPTION = "\f"
+planning_limiter = PlanningLimiter()
+snapshot_store = SnapshotStore()
+air_data_cache = AirDataCache()
 
 
 async def environment(city: str) -> EnvironmentalContext:
+    """Fetch city air quality, reusing live data while its cache entry is fresh."""
     info = get_city(city)
     if not info:
         raise HTTPException(400, "Unsupported city")
     cacheable = settings.data_mode == "live"
-    cached = _air_cache.get(info["label"]) if cacheable else None
-    if cached and time.monotonic() - cached[0] < AIR_CACHE_SECONDS:
-        return cached[1].model_copy(deep=True)
+    cached = air_data_cache.get(info["label"]) if cacheable else None
+    if cached is not None:
+        return cached
     try:
         context = await get_provider(settings.data_mode, settings.open_meteo_timeout_seconds).fetch(
             info["latitude"],
@@ -101,7 +55,7 @@ async def environment(city: str) -> EnvironmentalContext:
             info["label"],
         )
         if cacheable:
-            _air_cache[info["label"]] = (time.monotonic(), context.model_copy(deep=True))
+            air_data_cache.remember(info["label"], context)
         return context
     except ProviderError:
         return EnvironmentalContext(
@@ -119,6 +73,7 @@ async def environment(city: str) -> EnvironmentalContext:
 
 
 def apply_changes(profile: HouseholdProfile, changes: list[ConstraintChange]) -> HouseholdProfile:
+    """Apply supported comparison changes to a validated copy of the profile."""
     data = profile.model_dump(mode="json")
     for change in changes:
         if change in ("purifier_on", "purifier_off"):
@@ -137,41 +92,47 @@ def apply_changes(profile: HouseholdProfile, changes: list[ConstraintChange]) ->
     return HouseholdProfile.model_validate(data)
 
 
-@app.get("/health")
+@app.get("/health", description=_END_OPENAPI_DESCRIPTION)
 async def health() -> HealthStatus:
+    """Report the configured data mode and whether Gemini has a key."""
     return HealthStatus(data_mode=settings.data_mode, gemini_available=settings.gemini_available)
 
 
-@app.get("/api/cities")
+@app.get("/api/cities", description=_END_OPENAPI_DESCRIPTION)
 async def cities() -> list[dict]:
+    """List supported city keys, labels, coordinates and timezones."""
     return list_cities()
 
 
-@app.get("/api/air")
+@app.get("/api/air", description=_END_OPENAPI_DESCRIPTION)
 async def air(city: str) -> EnvironmentalContext:
+    """Return the environmental record for a supported city."""
     return await environment(city)
 
 
-@app.post("/api/plan")
+@app.post("/api/plan", description=_END_OPENAPI_DESCRIPTION)
 async def plan(request: PlanRequest) -> PlanResponse:
+    """Create a plan and save its inputs as a comparison baseline."""
     if request.constraint_changes:
         raise HTTPException(422, "Use typed changes through /api/compare")
     return await _create_snapshot(request.profile)
 
 
 async def _create_snapshot(profile: HouseholdProfile) -> PlanResponse:
-    async with planning_slot():
+    async with planning_limiter.slot(
+        settings.max_concurrent_gemini_calls, settings.max_plan_requests_per_minute
+    ):
         context = await environment(profile.city)
-        return remember(profile, await generate_plan(profile, context))
+        return snapshot_store.remember(profile, await generate_plan(profile, context))
 
 
-@app.post("/api/compare")
+@app.post("/api/compare", description=_END_OPENAPI_DESCRIPTION)
 async def compare(request: CompareRequest) -> CompareResponse:
-    prune_snapshots()
-    snapshot = _snapshots.get(request.baseline_plan_id)
+    """Replan from a saved baseline and summarize differences in action order."""
+    snapshot = snapshot_store.get(request.baseline_plan_id)
     if not snapshot:
         raise HTTPException(409, "The previous plan expired. Create a new plan first.")
-    _, original_profile, original = snapshot
+    original_profile, original = snapshot
     if profile_fingerprint(request.profile) != profile_fingerprint(original_profile):
         raise HTTPException(409, "Profile changed. Create a new plan first.")
     revised_profile = apply_changes(original_profile, request.changed_constraints)
@@ -204,13 +165,15 @@ async def compare(request: CompareRequest) -> CompareResponse:
     )
 
 
-@app.get("/api/sources")
+@app.get("/api/sources", description=_END_OPENAPI_DESCRIPTION)
 async def sources() -> list[SourceRecord]:
+    """List the reviewed evidence records."""
     return list(load_sources().values())
 
 
-@app.get("/api/sources/{source_id}")
+@app.get("/api/sources/{source_id}", description=_END_OPENAPI_DESCRIPTION)
 async def source(source_id: str) -> SourceRecord:
+    """Look up one reviewed evidence record by its ID."""
     record = load_sources().get(source_id)
     if record is None:
         raise HTTPException(404, "Unknown source")
@@ -220,6 +183,7 @@ async def source(source_id: str) -> SourceRecord:
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-@app.get("/")
+@app.get("/", description=_END_OPENAPI_DESCRIPTION)
 async def index() -> FileResponse:
+    """Serve the browser application entry page."""
     return FileResponse(STATIC_DIR / "index.html")

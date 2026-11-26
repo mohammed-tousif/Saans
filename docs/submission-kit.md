@@ -106,6 +106,17 @@ The user's own words asked for any corrections and then submission. Before submi
 
 ## Attempt two candidate changes (722/1024)
 
-Use after verifying this candidate on Render. Keep the existing app, repository, video and LinkedIn field links. The same Google Gemini services and data-sharing scope apply.
+Verified on Render at commit f10d5d6. GitHub CI passed. Keep the existing app, repository, video and LinkedIn field links. The same Google Gemini services and data-sharing scope apply.
 
 Saans builds practical indoor-air and transport plans around a household's city, budget, resources and fixed commitments. Live CAMS model data is source-labelled. Gemini ranks eligible action IDs and Saans validates them before showing reviewed advice and citations. Since attempt one, we separated eligibility, provider parsing, HTTP state and frontend responsibilities. Malformed pollutant units no longer discard valid readings. Stale plan responses and expired comparisons are handled safely. Ruff, mypy, ESLint and Prettier now check the project in CI with 64 backend tests, 88% backend coverage, two frontend unit tests and six Chromium tests. The eligibility order matched attempt one across 896 input combinations.
+
+
+## 26 November 2026 — attempt 2 submitted (Claude Code)
+The user explicitly said "Yes, submit attempt 2". Before submitting, the counter showed 1/3 and Attempt 1 at 95.72, and the form was pre-filled with the attempt 1 values. Claude Code replaced only the changes field with the prepared attempt-2 text (722/1024) and kept the GenAI text (641/1024) and all links. A JavaScript read-back showed all seven values exactly matching. The confirmation dialog repeated the plagiarism-check agreement (the same terms the user approved for attempt 1); Claude Code ticked it as part of the requested submission and submitted. The portal showed "Submission submitted successfully!" (attempt 2), and the counter is now **2/3** with Attempt 2 evaluating. Code at submission: f10d5d6 (live, CI passing). One attempt remains.
+Next three tasks: read the attempt 2 score and compare it with attempt 1 per criterion (Code Quality 86 was the target); decide with the user whether a justified fix merits the last attempt; if so, fix, verify live and submit before 29 Nov 23:59 IST.
+
+## Attempt three candidate changes (775/1024)
+
+Copy the paragraph below into “Describe the changes/updates made in the deployed version” only after the candidate is live. Keep the GenAI field text and existing links.
+
+This release keeps Saans's planning flow and advice intact. It moves development records out of the repository root and documents the Python interfaces and five browser modules. The planning limiter, comparison snapshots, live air cache and Gemini circuit breaker now have separate typed owners, with tests for admission, expiry, eviction and recovery. Ruff enforces Google-style docstrings and named comparison thresholds in application code. The ordered eligible actions matched the previous release in all 8,192 household and air-data cases. The OpenAPI schema, content security policy and executable browser code also matched. The suite passes 73 backend tests with 90% coverage, two frontend unit tests and six Chromium tests, including desktop and mobile accessibility.

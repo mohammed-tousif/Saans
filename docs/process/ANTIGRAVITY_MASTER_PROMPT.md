@@ -18,7 +18,7 @@ This prompt authorizes local development and verification. It does not authorize
 
 ## 2. Read the existing knowledge base
 
-Read `KNOWLEDGE_BASE.md`, then all documents in `knowledge-base/`, especially `09-grounding-and-corrections.md`. Use them as the evidence and acceptance baseline. This master prompt supersedes the older short `07-antigravity-brief.md` for execution and handoff workflow. Verified current official requirements supersede earlier assumptions. Log material changes and their evidence.
+Read `docs/process/KNOWLEDGE_BASE.md`, then all documents in `docs/process/knowledge-base/`, especially `docs/process/knowledge-base/09-grounding-and-corrections.md`. Use them as the evidence and acceptance baseline. This master prompt supersedes the older short `docs/process/knowledge-base/07-antigravity-brief.md` for execution and handoff workflow. Verified current official requirements supersede earlier assumptions. Log material changes and their evidence.
 
 Do not spend the entire session rereading or rewriting research. Begin implementation after understanding the core constraints. Recheck current official documentation only where the implementation depends on it. Never treat the inferred deadline, older challenge form limits, or our internal quality weights as confirmed competition rules.
 
@@ -131,7 +131,7 @@ Continue through milestones without repeatedly requesting approval for ordinary 
 
 ## 11. Verification and definition of done
 
-Use `knowledge-base/06-evaluation.md` as the detailed scenario specification. Prioritize tests that detect real mistakes: AQI scale confusion, stale timestamps, constraint violations, unsupported sources, unit mistakes, API failures and invalid AI output.
+Use `docs/process/knowledge-base/06-evaluation.md` as the detailed scenario specification. Prioritize tests that detect real mistakes: AQI scale confusion, stale timestamps, constraint violations, unsupported sources, unit mistakes, API failures and invalid AI output.
 
 Run applicable checks and fix failures before expanding scope. Distinguish deterministic/mock tests, actual live calls, manual inspection and untested behavior. Inspect real UI output at phone and desktop sizes, including at least one failure state. Record commands and concise results.
 
@@ -152,7 +152,7 @@ If missing credentials prevent live validation, call it “implemented, live ver
 
 Credits can end unexpectedly. Maintain these files from the first milestone, not only at the end:
 
-**`HANDOFF.md` — canonical shared resume record**
+**`docs/process/HANDOFF.md` — canonical shared resume record**
 
 Read this file and `AGENTS.md` before starting or resuming. Update the handoff after each meaningful work chunk and before stopping, not only at the end of a milestone. Codex follows the same protocol. Resume from the recorded unfinished task after inspecting the current code. A quota reset alone does not transfer editing ownership.
 
@@ -166,7 +166,7 @@ Read this file and `AGENTS.md` before starting or resuming. Update the handoff a
 - The next three tasks in execution order, with relevant files.
 - External blockers and how they can be resolved.
 
-**`TASKS.md`**: small prioritized checklist with pending/in-progress/done/blocked states and acceptance criteria. Mark a task done only with evidence.
+**`docs/process/TASKS.md`**: small prioritized checklist with pending/in-progress/done/blocked states and acceptance criteria. Mark a task done only with evidence.
 
 **`docs/decisions.md`**: dated consequential design choices and reasons, especially deviations from the knowledge base.
 

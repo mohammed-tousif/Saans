@@ -32,10 +32,12 @@ class Settings(BaseSettings):
 
     @property
     def gemini_available(self) -> bool:
+        """Return whether a non-placeholder key is configured."""
         return bool(self.gemini_api_key and self.gemini_api_key != "your-gemini-api-key-here")
 
     @property
     def is_fixture_mode(self) -> bool:
+        """Return whether the provider is configured for synthetic data."""
         return self.data_mode == "fixture"
 
 

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Literal
 
+from app.providers import EUROPEAN_AQI_FAIR_MAX, EUROPEAN_AQI_GOOD_MAX
 from app.schemas import (
     ActionPurpose,
     ActionRecord,
@@ -59,9 +60,9 @@ def classify_pollution_level(context: EnvironmentalContext) -> PollutionLevel:
     value = context.index_value
     if value is None or "European" not in (context.index_system or ""):
         return "unknown"
-    if value <= 20:
+    if value <= EUROPEAN_AQI_GOOD_MAX:
         return "low"
-    if value <= 40:
+    if value <= EUROPEAN_AQI_FAIR_MAX:
         return "moderate"
     return "high"
 

@@ -1,3 +1,4 @@
+// Coordinates requests, household state, and navigation between Saans views.
 import { RequestError, requestJson } from './api.js';
 import { errorMessage, node } from './dom.js';
 import {
@@ -28,13 +29,23 @@ const state = {
   revision: 0,
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await Promise.all([loadCities(), loadSources()]);
-  setupEventListeners();
-  setupFlexibilitySlider();
-  updateSampleBannerForMode();
-});
+document.addEventListener(
+  'DOMContentLoaded',
+  /**
+   * Load form options and evidence sources before enabling the interface.
+   * @returns {Promise<void>}
+   */ async () => {
+    await Promise.all([loadCities(), loadSources()]);
+    setupEventListeners();
+    setupFlexibilitySlider();
+    updateSampleBannerForMode();
+  },
+);
 
+/**
+ * Populate the city selector with supported locations from the API.
+ * @returns {Promise<void>}
+ */
 async function loadCities() {
   try {
     const cities = await requestJson('/api/cities');
@@ -49,6 +60,10 @@ async function loadCities() {
   }
 }
 
+/**
+ * Index available evidence by source ID and refresh the catalogue view.
+ * @returns {Promise<void>}
+ */
 async function loadSources() {
   try {
     const sources = await requestJson('/api/sources');
@@ -59,6 +74,11 @@ async function loadSources() {
   renderSources(state.sources);
 }
 
+/**
+ * Apply a known sample and mark earlier planning requests as out of date.
+ * @param {string} name Sample profile key from the button's data attribute.
+ * @returns {void}
+ */
 function loadSampleProfile(name) {
   if (!Object.hasOwn(SAMPLE_PROFILES, name)) return;
   populateProfile(SAMPLE_PROFILES[name]);
@@ -82,6 +102,11 @@ const ACTIONS = {
   'change-constraint': (el) => changeConstraint(el.dataset.change),
 };
 
+/**
+ * Route a click to the closest element with a recognized delegated action.
+ * @param {MouseEvent} event Click received by the document.
+ * @returns {void}
+ */
 function handleAction(event) {
   const el = event.target.closest('[data-action]');
   const action = el && Object.hasOwn(ACTIONS, el.dataset.action) && ACTIONS[el.dataset.action];
@@ -90,6 +115,10 @@ function handleAction(event) {
   action(el);
 }
 
+/**
+ * Bind navigation, form revision tracking, and plan submission handlers.
+ * @returns {void}
+ */
 function setupEventListeners() {
   document.addEventListener('click', handleAction);
 
@@ -109,22 +138,33 @@ function setupEventListeners() {
   });
 
   // Keyboard navigation for tabs
-  document.querySelector('.tab-nav').addEventListener('keydown', (e) => {
-    const tabs = [...document.querySelectorAll('.tab')];
-    const idx = tabs.indexOf(document.activeElement);
-    if (idx === -1) return;
-    const destinations = {
-      ArrowRight: (idx + 1) % tabs.length,
-      ArrowLeft: (idx - 1 + tabs.length) % tabs.length,
-      Home: 0,
-      End: tabs.length - 1,
-    };
-    if (!Object.hasOwn(destinations, e.key)) return;
-    e.preventDefault();
-    switchTab(tabs[destinations[e.key]].dataset.tab, true);
-  });
+  document.querySelector('.tab-nav').addEventListener(
+    'keydown',
+    /**
+     * Move focus and selection within the tab list for navigation keys.
+     * @param {KeyboardEvent} e Key press received by the tab list.
+     * @returns {void}
+     */ (e) => {
+      const tabs = [...document.querySelectorAll('.tab')];
+      const idx = tabs.indexOf(document.activeElement);
+      if (idx === -1) return;
+      const destinations = {
+        ArrowRight: (idx + 1) % tabs.length,
+        ArrowLeft: (idx - 1 + tabs.length) % tabs.length,
+        Home: 0,
+        End: tabs.length - 1,
+      };
+      if (!Object.hasOwn(destinations, e.key)) return;
+      e.preventDefault();
+      switchTab(tabs[destinations[e.key]].dataset.tab, true);
+    },
+  );
 }
 
+/**
+ * Explain the configured environmental data mode beside the sample profiles.
+ * @returns {Promise<void>}
+ */
 async function updateSampleBannerForMode() {
   const note = document.getElementById('sample-note');
   if (!note) return;
@@ -141,7 +181,12 @@ async function updateSampleBannerForMode() {
   }
 }
 
-// --- Tab Switching ---
+/**
+ * Select a tab, show its panel, and optionally move keyboard focus to it.
+ * @param {string} tabName Tab key shared by the tab button and its panel.
+ * @param {boolean} [focus] Whether to focus the selected tab button.
+ * @returns {void}
+ */
 function switchTab(tabName, focus = false) {
   // Update tab buttons
   document.querySelectorAll('.tab').forEach((t) => {
@@ -160,6 +205,12 @@ function switchTab(tabName, focus = false) {
   if (focus) document.getElementById('tab-' + tabName)?.focus();
 }
 
+/**
+ * Store the accepted profile and plan, then refresh all plan-dependent views.
+ * @param {import('./profile.js').HouseholdProfile} profile Inputs associated with the plan.
+ * @param {import('./views.js').Plan} plan Plan returned by the API.
+ * @returns {void}
+ */
 function presentPlan(profile, plan) {
   state.profile = profile;
   state.currentPlan = plan;
@@ -170,6 +221,11 @@ function presentPlan(profile, plan) {
   updateHeaderStatus(plan);
 }
 
+/**
+ * Coordinate the plan button, busy indicator, and result visibility during generation.
+ * @param {boolean} loading Whether a plan request is in progress.
+ * @returns {void}
+ */
 function setPlanLoading(loading) {
   const button = document.getElementById('btn-create-plan');
   button.disabled = loading;
@@ -186,6 +242,11 @@ function setPlanLoading(loading) {
   );
 }
 
+/**
+ * Translate rate-limit and structured validation responses into recovery guidance.
+ * @param {Error} error Failure raised while requesting or presenting a plan.
+ * @returns {string} Specific guidance or the available error message.
+ */
 function planErrorMessage(error) {
   if (error instanceof RequestError && error.status === 429) {
     return 'Planning is busy or the request limit has been reached. Please wait a minute and try again.';
@@ -196,6 +257,10 @@ function planErrorMessage(error) {
   return error.message || 'Failed to generate plan. Please check your connection and try again.';
 }
 
+/**
+ * Request a plan for the current setup and display it only if that setup is still current.
+ * @returns {Promise<void>}
+ */
 async function createPlan() {
   if (state.isGenerating) return;
   const profile = collectProfile();
@@ -220,6 +285,11 @@ async function createPlan() {
   }
 }
 
+/**
+ * Compare one constraint change with the accepted plan and offer the current revision for review.
+ * @param {string} change Constraint change key exposed by a comparison button.
+ * @returns {Promise<void>}
+ */
 async function changeConstraint(change) {
   if (state.isGenerating || !state.currentPlan) return;
   const revision = state.revision;
@@ -262,6 +332,10 @@ async function changeConstraint(change) {
   }
 }
 
+/**
+ * Apply a pending revision only while it still matches the setup used for comparison.
+ * @returns {void}
+ */
 function acceptRevisedPlan() {
   const pending = state.pendingComparison;
   state.pendingComparison = null;
@@ -273,6 +347,11 @@ function acceptRevisedPlan() {
   document.getElementById('tab-today').focus();
 }
 
+/**
+ * Open the source catalogue and focus, scroll to, and highlight the selected entry.
+ * @param {string} sourceId Evidence ID used to locate the source card.
+ * @returns {void}
+ */
 function showSource(sourceId) {
   switchTab('sources');
   setTimeout(() => {

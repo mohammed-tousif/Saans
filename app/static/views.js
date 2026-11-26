@@ -1,5 +1,80 @@
+// Renders air readings, plan results, comparisons, and their evidence in the browser.
 import { actionButton, emptyMessage, errorMessage, node, safeUrl } from './dom.js';
 
+/**
+ * @typedef {{name: string, value: number, unit: string}} Pollutant
+ * One reported pollutant concentration.
+ */
+
+/**
+ * @typedef {object} AirContext
+ * @property {string} provider Name of the data provider.
+ * @property {string} source_kind Provider data type.
+ * @property {string} location_label Display name for the location.
+ * @property {number} latitude Latitude in degrees.
+ * @property {number} longitude Longitude in degrees.
+ * @property {number|null} spatial_resolution_km Approximate resolution, when supplied.
+ * @property {string|null} observed_at Timestamp, when supplied.
+ * @property {string|null} index_system Name of the air quality index, when available.
+ * @property {number|null} index_value Air quality index reading, when available.
+ * @property {string|null} category Display category, when available.
+ * @property {Pollutant[]} pollutants Reported pollutant concentrations.
+ * @property {boolean} is_stale Whether the data are older than expected.
+ * @property {string} attribution Provider attribution text.
+ */
+
+/**
+ * @typedef {object} PlanAction
+ * @property {string} action_id Action catalogue ID.
+ * @property {string} title Display title.
+ * @property {string} time_window Suggested time for the action.
+ * @property {string} reason Reason the action fits the household.
+ * @property {string} tradeoff Cost or compromise to consider.
+ * @property {string} assumptions Conditions behind the recommendation.
+ * @property {string[]} evidence_ids IDs of sources supporting the action.
+ */
+
+/**
+ * @typedef {{period: string, actions?: string[], notes?: string}} TimelineBlock
+ * A displayed schedule period and its action text.
+ */
+
+/**
+ * @typedef {object} Plan
+ * @property {string} plan_id ID of the server-side plan snapshot.
+ * @property {PlanAction[]} actions Recommended actions in display order.
+ * @property {TimelineBlock[]} timeline Actions organized by time period.
+ * @property {string} context_summary Overview of the recommendations.
+ * @property {string[]} warnings Constraints or uncertainties to highlight.
+ * @property {'ai'|'fallback'|'fixture'} generation_mode Method used to generate the plan.
+ * @property {string|null} model_id Model label when the plan used a model.
+ * @property {AirContext|null} environmental_context Data used during planning.
+ */
+
+/**
+ * @typedef {object} Comparison
+ * @property {Plan} revised_plan Plan calculated under the changed constraints.
+ * @property {import('./profile.js').HouseholdProfile} revised_profile Inputs used for the revised plan.
+ * @property {string[]} changes_summary Ordered action changes.
+ * @property {string[]} preserved_constraints Constraints that still apply.
+ * @property {string[]} impact_notes Qualitative effects of the changed plan.
+ */
+
+/**
+ * @typedef {object} Source
+ * @property {string} id Evidence ID referenced by actions.
+ * @property {string} title Source title.
+ * @property {string} organization Publishing organization.
+ * @property {string} supported_claim Claim backed by the source.
+ * @property {string} url Source URL, subject to validation before linking.
+ * @property {string} limitations Caveats about how the evidence applies.
+ */
+
+/**
+ * Show the current air reading, its provenance summary, and any freshness warnings.
+ * @param {AirContext} ctx Environmental data used to generate the plan.
+ * @returns {void}
+ */
 export function renderAirContext(ctx) {
   const card = document.getElementById('air-context');
   const loading = document.getElementById('air-loading');
@@ -47,6 +122,11 @@ export function renderAirContext(ctx) {
   card.append(...airNotices(ctx));
 }
 
+/**
+ * Build concentration chips with names, values rounded to one decimal, and units.
+ * @param {Pollutant[]} pollutants Concentrations in provider order.
+ * @returns {HTMLDivElement} Container for the concentration chips.
+ */
 function renderPollutants(pollutants) {
   return node(
     'div',
@@ -63,6 +143,11 @@ function renderPollutants(pollutants) {
   );
 }
 
+/**
+ * Build notices for stale data and synthetic fixtures when applicable.
+ * @param {AirContext} context Data whose freshness and source are checked.
+ * @returns {HTMLDivElement[]} Notice elements in display order.
+ */
 function airNotices(context) {
   const notices = [];
   if (context.is_stale) {
@@ -76,6 +161,13 @@ function airNotices(context) {
   return notices;
 }
 
+/**
+ * Update the plan summary, action cards, timeline, warnings, and comparison options.
+ * @param {Plan} plan Plan returned by the API.
+ * @param {import('./profile.js').HouseholdProfile} profile Inputs used by the plan.
+ * @param {Record<string, Source>} sources Evidence records indexed by ID.
+ * @returns {void}
+ */
 export function renderPlan(plan, profile, sources) {
   const planContent = document.getElementById('plan-content');
   planContent.style.display = 'block';
@@ -127,6 +219,14 @@ export function renderPlan(plan, profile, sources) {
 }
 
 let actionCardSequence = 0;
+
+/**
+ * Build an expandable action card with unique control IDs and links to known evidence.
+ * @param {PlanAction} action Recommendation to display.
+ * @param {number} number One-based position shown in the card header.
+ * @param {Record<string, Source>} sources Evidence records indexed by ID.
+ * @returns {HTMLDivElement} Card with collapsed details.
+ */
 function createActionCard(action, number, sources) {
   const sequence = ++actionCardSequence;
   const card = node('div', 'action-card');
@@ -173,10 +273,21 @@ function createActionCard(action, number, sources) {
   return card;
 }
 
+/**
+ * Pair an action detail heading with its content element.
+ * @param {string} label Heading for the detail row.
+ * @param {HTMLElement} content Prepared detail content.
+ * @returns {HTMLDivElement} Labeled detail row.
+ */
 function actionDetail(label, content) {
   return node('div', 'action-detail-row', node('div', 'action-detail-label', label), content);
 }
 
+/**
+ * Toggle a card's details and synchronize its accessible expanded state.
+ * @param {HTMLButtonElement} headerEl Card button controlling the details.
+ * @returns {void}
+ */
 export function toggleAction(headerEl) {
   const card = headerEl.closest('.action-card');
   const isExpanded = card.classList.contains('expanded');
@@ -184,6 +295,11 @@ export function toggleAction(headerEl) {
   headerEl.setAttribute('aria-expanded', !isExpanded ? 'true' : 'false');
 }
 
+/**
+ * Render the schedule in display order, or show the empty timeline message.
+ * @param {TimelineBlock[]} [timeline] Scheduled periods and their recommendations.
+ * @returns {void}
+ */
 function renderTimeline(timeline) {
   const container = document.getElementById('timeline');
   if (!timeline?.length) {
@@ -208,6 +324,11 @@ function renderTimeline(timeline) {
   );
 }
 
+/**
+ * Offer comparison controls that reflect the household's current constraints.
+ * @param {import('./profile.js').HouseholdProfile} profile Current household settings.
+ * @returns {void}
+ */
 function renderConstraintButtons(profile) {
   const container = document.getElementById('constraint-buttons');
 
@@ -268,6 +389,11 @@ function renderConstraintButtons(profile) {
   );
 }
 
+/**
+ * Show changes, preserved commitments, revised actions, and impact notes in the dialog.
+ * @param {Comparison} comparison Comparison returned by the API.
+ * @returns {void}
+ */
 export function renderComparison(comparison) {
   const { revised_plan: plan } = comparison;
   const changes = (comparison.changes_summary || []).map((text) => {
@@ -311,10 +437,22 @@ export function renderComparison(comparison) {
   document.getElementById('compare-body').replaceChildren(...sections);
 }
 
+/**
+ * Group comparison results beneath a section heading.
+ * @param {string} title Section heading.
+ * @param {...HTMLElement} content Prepared result elements.
+ * @returns {HTMLDivElement} Labeled comparison section.
+ */
 function compareSection(title, ...content) {
   return node('div', 'compare-section', node('div', 'compare-section-title', title), ...content);
 }
 
+/**
+ * Display the subset of recommendations that applies to the home.
+ * @param {Plan|null} plan Current plan, when available.
+ * @param {Record<string, Source>} sources Evidence records indexed by ID.
+ * @returns {void}
+ */
 export function renderHomeActions(plan, sources) {
   const container = document.getElementById('home-actions');
   if (!plan?.actions) {
@@ -338,7 +476,11 @@ export function renderHomeActions(plan, sources) {
   );
 }
 
-// --- Sources ---
+/**
+ * Show evidence records and create external links only for allowed URLs.
+ * @param {Record<string, Source>} catalogue Evidence records indexed by ID.
+ * @returns {void}
+ */
 export function renderSources(catalogue) {
   const container = document.getElementById('sources-list');
   const sources = Object.values(catalogue);
@@ -377,6 +519,11 @@ export function renderSources(catalogue) {
   );
 }
 
+/**
+ * Show provider, data type, timestamp, location, and applicable freshness or resolution details.
+ * @param {AirContext|null} ctx Environmental data used by the current plan.
+ * @returns {void}
+ */
 export function renderProvenance(ctx) {
   if (!ctx) return;
   const card = document.getElementById('env-provenance');
@@ -429,6 +576,11 @@ export function renderProvenance(ctx) {
   );
 }
 
+/**
+ * Show the plan's location, generation mode, and available model ID in the header.
+ * @param {Plan|null} plan Current plan, when available.
+ * @returns {void}
+ */
 export function updateHeaderStatus(plan) {
   const status = document.getElementById('header-status');
   if (!plan) return;
@@ -442,7 +594,11 @@ export function updateHeaderStatus(plan) {
   status.textContent = `${city} • ${mode}${plan.model_id ? ` • ${plan.model_id}` : ''}`;
 }
 
-// --- Error Display ---
+/**
+ * Replace the air card with an accessible error and a way back to setup.
+ * @param {string} message Error detail to show.
+ * @returns {void}
+ */
 export function showError(message) {
   for (const id of ['air-loading', 'plan-content', 'today-empty']) {
     document.getElementById(id).style.display = 'none';
@@ -454,6 +610,11 @@ export function showError(message) {
   document.getElementById('air-context').replaceChildren(panel);
 }
 
+/**
+ * Map a provider's category wording to the severity colors used by the interface.
+ * @param {string|null} [category] Air quality category, when available.
+ * @returns {string} CSS class for the category or the unknown state.
+ */
 export function getCategoryClass(category) {
   if (!category) return 'aq-unknown';
   const cat = category.toLowerCase();

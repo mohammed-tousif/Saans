@@ -22,6 +22,18 @@ def test_responses_are_not_cached_or_framed():
         assert response.headers["x-frame-options"] == "DENY"
 
 
+def test_developer_docstrings_preserve_public_openapi_descriptions():
+    with TestClient(app) as client:
+        response = client.get("/openapi.json")
+    response.raise_for_status()
+    contract = response.json()
+    assert "description" not in contract["paths"]["/api/plan"]["post"]
+    schemas = contract["components"]["schemas"]
+    assert "description" not in schemas["PlanRequest"]
+    assert "description" not in schemas["BudgetBand"]
+    assert schemas["HouseholdProfile"]["description"] == "Household inputs for plan generation."
+
+
 @pytest.mark.asyncio
 async def test_valid_ai_selection_is_labelled_and_grounded(monkeypatch):
     monkeypatch.setattr(settings, "gemini_api_key", "test-placeholder")

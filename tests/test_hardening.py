@@ -11,6 +11,7 @@ from google.genai.errors import ServerError
 
 from app import main, planner
 from app.config import settings
+from app.planning_state import AirDataCache
 from app.providers import FixtureProvider
 from app.schemas import HouseholdProfile
 
@@ -97,10 +98,15 @@ async def test_failing_primary_is_skipped_during_cooldown(monkeypatch, two_model
 
 @pytest.mark.asyncio
 async def test_primary_is_retried_after_cooldown(monkeypatch, two_models):
-    planner._primary_cooldown_until = 0.0
-    assert planner.model_order() == ("primary-model", "backup-model")
-    monkeypatch.setattr(planner, "_primary_cooldown_until", float("inf"))
-    assert planner.model_order() == ("backup-model", "primary-model")
+    now = 0.0
+    breaker = planner.ModelCircuitBreaker(clock=lambda: now)
+    monkeypatch.setattr(planner, "model_circuit_breaker", breaker)
+    models = settings.gemini_model, settings.gemini_backup_model
+    assert breaker.model_order(*models) == ("primary-model", "backup-model")
+    breaker.record_transient_failure()
+    assert breaker.model_order(*models) == ("backup-model", "primary-model")
+    now = 300.0
+    assert breaker.model_order(*models) == ("primary-model", "backup-model")
 
 
 @pytest.mark.asyncio
@@ -111,7 +117,8 @@ async def test_permanent_errors_do_not_open_the_breaker(monkeypatch, two_models)
     monkeypatch.setattr(planner, "_select_with_gemini", invalid)
     with pytest.raises(ValueError):
         await planner.select_with_retry(None, None, [])
-    assert planner.model_order()[0] == "primary-model"
+    models = settings.gemini_model, settings.gemini_backup_model
+    assert planner.model_circuit_breaker.model_order(*models)[0] == "primary-model"
 
 
 # --- Air-data cache -----------------------------------------------------------
@@ -146,8 +153,10 @@ async def test_expired_or_fixture_air_data_is_refetched(monkeypatch):
     await main.environment("delhi")
     assert provider.calls == 2
     monkeypatch.setattr(settings, "data_mode", "live")
-    monkeypatch.setattr(main, "AIR_CACHE_SECONDS", -1)
+    now = 0.0
+    monkeypatch.setattr(main, "air_data_cache", AirDataCache(clock=lambda: now))
     await main.environment("delhi")
+    now = 600.0
     await main.environment("delhi")
     assert provider.calls == 4
 

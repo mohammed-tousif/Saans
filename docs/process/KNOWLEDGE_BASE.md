@@ -1,6 +1,6 @@
 # PromptWars 06 — project knowledge base
 
-Research baseline: 18 November 2026, Asia/Kolkata. Status updated 24 November: a local application is implemented; see HANDOFF.md and docs/verification.md for current checks and limitations. Deployment and submission remain unverified.
+Research baseline: 18 November 2026, Asia/Kolkata. Status updated 24 November: a local application is implemented; see the [handoff](HANDOFF.md) and [verification record](../verification.md) for current checks, deployment and submission status.
 
 ## Recommendation
 

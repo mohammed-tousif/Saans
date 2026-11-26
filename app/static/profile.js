@@ -1,4 +1,32 @@
+// Reads and populates the household setup form and its sample profiles.
 import { actionButton, node } from './dom.js';
+
+/**
+ * @typedef {object} RoutineBlock
+ * @property {string} label Commitment name.
+ * @property {string} start_time Local start time in HH:MM format.
+ * @property {string} end_time Local end time in HH:MM format.
+ * @property {boolean} is_fixed Whether the time is fixed.
+ * @property {string} location Setting such as outdoor or commute.
+ */
+
+/**
+ * @typedef {object} HouseholdProfile
+ * @property {string} city City key from the API.
+ * @property {RoutineBlock[]} routine_blocks Scheduled commitments.
+ * @property {string[]} available_transport Available transport keys.
+ * @property {string} budget_band Budget category.
+ * @property {boolean} has_purifier Whether a purifier is available.
+ * @property {boolean} has_exhaust_fan Whether an exhaust fan is available.
+ * @property {boolean} has_cross_ventilation Whether cross ventilation is available.
+ * @property {string} indoor_cooking_fuel Cooking fuel key.
+ * @property {boolean} has_children Whether the household includes children.
+ * @property {boolean} has_elderly Whether the household includes older adults.
+ * @property {boolean} has_respiratory_concern Whether anyone has a respiratory concern.
+ * @property {boolean} [has_mobility_limitation] Whether anyone has limited mobility.
+ * @property {number} flexibility_minutes Available schedule flexibility in minutes.
+ * @property {string} [additional_notes] Optional profile notes.
+ */
 
 export const SAMPLE_PROFILES = {
   parent: {
@@ -56,6 +84,10 @@ export const SAMPLE_PROFILES = {
   },
 };
 
+/**
+ * Mirror the flexibility slider value in its minute readout when it changes.
+ * @returns {void}
+ */
 export function setupFlexibilitySlider() {
   const slider = document.getElementById('flexibility');
   const output = document.getElementById('flexibility-value');
@@ -66,6 +98,11 @@ export function setupFlexibilitySlider() {
   }
 }
 
+/**
+ * Fill the setup form with a sample or revised household profile.
+ * @param {HouseholdProfile} sample Profile whose fields replace the form values.
+ * @returns {void}
+ */
 export function populateProfile(sample) {
   // Set city
   document.getElementById('city-select').value = sample.city;
@@ -105,7 +142,13 @@ export function populateProfile(sample) {
   document.getElementById('flexibility-value').textContent = `${sample.flexibility_minutes} min`;
 }
 
-// --- Routine Blocks ---
+/**
+ * Append an editable commitment row with time fields and a remove button.
+ * @param {string} [label] Initial commitment name.
+ * @param {string} [startTime] Initial local start in HH:MM format.
+ * @param {string} [endTime] Initial local end in HH:MM format.
+ * @returns {void}
+ */
 export function addRoutineBlock(label = '', startTime = '09:00', endTime = '17:00') {
   const block = node('div', 'routine-block');
   const fields = [
@@ -127,7 +170,10 @@ export function addRoutineBlock(label = '', startTime = '09:00', endTime = '17:0
   document.getElementById('routine-blocks').append(block);
 }
 
-// --- Form Data Collection ---
+/**
+ * Collect the current form values, omitting incomplete commitment rows.
+ * @returns {HouseholdProfile|null} Profile for the planning API, or null after alerting for a missing city.
+ */
 export function collectProfile() {
   const city = document.getElementById('city-select').value;
   if (!city) {

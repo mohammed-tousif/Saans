@@ -27,3 +27,9 @@ Requests are buffered only up to 32 KiB before API parsing; oversized bodies ret
 Eligibility separates household restrictions, pollutant conditions and action ordering. The same catalogue, index ranges and budget order apply. Provider parsing normalizes timestamps, readings and coordinates separately. A malformed unit marks its reading unavailable while keeping the remaining valid readings. Invalid coordinates fall back to the requested city coordinates. Request guards enforce the byte cap before appending each incoming chunk and deliver one replayed body to the application.
 
 The frontend separates form handling, JSON requests and rendering. A plan and its submitted profile are stored together when the response matches the current edit revision. A pending comparison is kept as one record and expires if its form revision no longer matches. The error view can explain an expired comparison without enabling acceptance. Same-origin modules use the existing strict CSP and safe DOM helpers.
+
+## Attempt three state ownership
+
+The API worker owns one limiter, snapshot store and live air-data cache. Admission is synchronous until the slot is acquired. Every admitted request counts against the rolling minute, and the active slot is released on success, failure or cancellation. The snapshot store evicts the oldest entry above 100 entries and expires entries older than 30 minutes. The live air cache copies provider results by city and expires them at 10 minutes. The model breaker prefers a distinct backup for five minutes after a transient primary error. Classes accept monotonic clocks for deterministic tests.
+
+Developer docstrings are retained in code. Routes and schema definitions preserve their existing public OpenAPI descriptions.

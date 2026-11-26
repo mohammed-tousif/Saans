@@ -1,4 +1,5 @@
 """Single-process local Saans API with bounded planning and private snapshots."""
+
 from __future__ import annotations
 
 import time
@@ -14,12 +15,19 @@ from fastapi.staticfiles import StaticFiles
 
 from app.cities import get_city, list_cities
 from app.config import settings
-from app.security import RequestGuards
 from app.planner import generate_plan, profile_fingerprint
 from app.providers import ProviderError, get_provider
 from app.rules import load_sources
-from app.schemas import (CompareRequest, CompareResponse, DataSourceKind,
-                         EnvironmentalContext, HealthStatus, HouseholdProfile, PlanRequest)
+from app.schemas import (
+    CompareRequest,
+    CompareResponse,
+    DataSourceKind,
+    EnvironmentalContext,
+    HealthStatus,
+    HouseholdProfile,
+    PlanRequest,
+)
+from app.security import RequestGuards
 
 app = FastAPI(title="Saans", version="0.1.0")
 app.add_middleware(RequestGuards)
@@ -33,7 +41,11 @@ _active = 0
 def remember(profile, plan):
     prune_snapshots()
     plan.plan_id = uuid.uuid4().hex
-    _snapshots[plan.plan_id] = (time.monotonic(), profile.model_copy(deep=True), plan.model_copy(deep=True))
+    _snapshots[plan.plan_id] = (
+        time.monotonic(),
+        profile.model_copy(deep=True),
+        plan.model_copy(deep=True),
+    )
     while len(_snapshots) > 100:
         _snapshots.popitem(last=False)
     return plan
@@ -51,8 +63,10 @@ async def planning_slot():
     now = time.monotonic()
     while _request_times and now - _request_times[0] >= 60:
         _request_times.popleft()
-    if (_active >= settings.max_concurrent_gemini_calls or
-            len(_request_times) >= settings.max_plan_requests_per_minute):
+    if (
+        _active >= settings.max_concurrent_gemini_calls
+        or len(_request_times) >= settings.max_plan_requests_per_minute
+    ):
         raise HTTPException(429, "Planning is busy. Please try again shortly.")
     _request_times.append(now)
     _active += 1
@@ -62,20 +76,41 @@ async def planning_slot():
         _active -= 1
 
 
+# CAMS model data updates hourly, so reuse a successful live fetch per city briefly
+# instead of calling Open-Meteo again for every plan and comparison.
+AIR_CACHE_SECONDS = 600
+_air_cache: dict[str, tuple[float, EnvironmentalContext]] = {}
+
+
 async def environment(city):
     info = get_city(city)
     if not info:
         raise HTTPException(400, "Unsupported city")
+    cacheable = settings.data_mode == "live"
+    cached = _air_cache.get(info["label"]) if cacheable else None
+    if cached and time.monotonic() - cached[0] < AIR_CACHE_SECONDS:
+        return cached[1].model_copy(deep=True)
     try:
-        return await get_provider(settings.data_mode, settings.open_meteo_timeout_seconds).fetch(
-            info["latitude"], info["longitude"], info["label"],
+        context = await get_provider(settings.data_mode, settings.open_meteo_timeout_seconds).fetch(
+            info["latitude"],
+            info["longitude"],
+            info["label"],
         )
+        if cacheable:
+            _air_cache[info["label"]] = (time.monotonic(), context.model_copy(deep=True))
+        return context
     except ProviderError:
         return EnvironmentalContext(
-            provider="Unavailable", source_url="", source_kind=DataSourceKind.UNAVAILABLE,
-            location_label=info["label"], latitude=info["latitude"], longitude=info["longitude"],
-            retrieved_at=datetime.now(timezone.utc), is_stale=True,
-            quality_flags=["provider_unavailable"], attribution="Environmental data unavailable",
+            provider="Unavailable",
+            source_url="",
+            source_kind=DataSourceKind.UNAVAILABLE,
+            location_label=info["label"],
+            latitude=info["latitude"],
+            longitude=info["longitude"],
+            retrieved_at=datetime.now(timezone.utc),
+            is_stale=True,
+            quality_flags=["provider_unavailable"],
+            attribution="Environmental data unavailable",
         )
 
 
@@ -141,12 +176,24 @@ async def compare(request: CompareRequest):
     changes = [f"Added: {after[k]}" for k in after.keys() - before.keys()]
     changes += [f"Removed: {before[k]}" for k in before.keys() - after.keys()]
     if not changes:
-        changes = ["Your constraints were updated. The same actions remain eligible; no new benefit is claimed."]
+        changes = [
+            "Your constraints were updated. The same actions remain eligible; "
+            "no new benefit is claimed."
+        ]
     return CompareResponse(
-        original_plan=original, revised_plan=revised, revised_profile=revised_profile,
+        original_plan=original,
+        revised_plan=revised,
+        revised_profile=revised_profile,
         changes_summary=changes,
-        preserved_constraints=[f"{b.label} ({b.start_time}–{b.end_time})" for b in revised_profile.routine_blocks if b.is_fixed],
-        impact_notes=["Qualitative comparison only. Current environmental context was refreshed; no numerical savings calculated."],
+        preserved_constraints=[
+            f"{b.label} ({b.start_time}–{b.end_time})"
+            for b in revised_profile.routine_blocks
+            if b.is_fixed
+        ],
+        impact_notes=[
+            "Qualitative comparison only. Current environmental context was refreshed; "
+            "no numerical savings calculated."
+        ],
     )
 
 

@@ -62,12 +62,12 @@ Rechecked signed in through Chrome on 26 Nov: attempts **0/3**, ends **29/11/202
 | Challenges | [Challenge 6] Urban Air Quality Assistant |
 | Public GitHub Repository Link | https://github.com/mohammed-tousif/Saans |
 | Project Deployed Link | https://saans-wwwc.onrender.com |
-| Project Demo Video Submission | PENDING: unlisted YouTube or Drive link for output/demo/saans-demo.webm, uploaded by the user and checked while signed out |
+| Project Demo Video Submission | https://youtu.be/KyVVyveKvt8 (Unlisted; plays signed out, checked 26 Nov) |
 | LinkedIn Post | https://www.linkedin.com/posts/mohammed-tousif-malekopp-4370792bb_buildwithai-promptwarsvirtual-challenge6-share-7531409733522534401-loH2/ |
 
-**Describe the changes (827/1024):**
+**Describe the changes (882/1024; updated 26 Nov after hardening):**
 
-Saans (Challenge 06: Urban Air Quality Assistant) turns a household's city, fixed routines, budget, transport and home resources into practical air-quality actions. Deployed version: live Open-Meteo CAMS air data with source, index and time labels; Gemini ranks eligible reviewed action IDs and the server validates them; each action shows reviewed advice, trade-offs and citations; fixed commitments (e.g. school drop-off) are preserved in the timeline; typed what-if comparison (transit, purifier, budget, flexibility) against the stored baseline, with accept; clear validation errors and labelled fallback if AI is unavailable; bounded Gemini retries with a Flash-Lite backup; request-size limits, security headers and rate limits; responsive clay UI; 38 automated tests. No measured health or emissions savings are claimed.
+Saans (Challenge 06: Urban Air Quality Assistant) turns a household's city, fixed routines, budget, transport and home resources into practical air-quality actions. Deployed version: live Open-Meteo CAMS air data with source, index and time labels; Gemini ranks eligible reviewed action IDs and the server validates them; each action shows reviewed advice, trade-offs and citations; fixed commitments such as school drop-off are preserved; typed what-if comparison against the stored baseline, with accept; clear validation errors and labelled fallback. Latest hardening: strict Content-Security-Policy with no inline code, escaped output and http(s)-only links; backup-model circuit breaker and 10-minute air-data cache; axe-core WCAG 2.1 AA with 0 violations on desktop and mobile; 51 pytest plus Node frontend tests run in CI. No measured health or emissions savings are claimed.
 
 **Gen AI services and where used (716/1024):**
 
@@ -94,3 +94,7 @@ Suggested edit by the user, replacing the sentence that starts "The current auto
 > The live app is now running on Render with real Gemini 3.5 Flash-Lite plans and live CAMS air data, and all 38 automated tests pass. Try it: https://saans-wwwc.onrender.com · Code: https://github.com/mohammed-tousif/Saans
 
 Image to add alongside the artwork: output/demo/saans-live-plan.png (a real screenshot of the live plan: Delhi NCR, European AQI 85, Open-Meteo CAMS, gemini-3.5-flash-lite).
+
+
+## 26 November 2026 — LinkedIn post edited (Claude Code)
+With the user's explicit approval, Claude Code edited the existing post in the user's signed-in Chrome. Only the outdated paragraph changed: it now says Saans is live on Render with real Gemini 3.5 Flash-Lite plans and live CAMS air data, that all 38 tests pass, and links the app, the demo video (https://youtu.be/KyVVyveKvt8) and the repo. LinkedIn shows these as lnkd.in short links. After reloading, the signed-in view showed the new text, the Google for Developers and Hack2skill company mentions still linked, all three hashtags, and the artwork. The post URL is unchanged. The signed-out public page still served the old cached text immediately after saving; recheck it later. LinkedIn's edit dialog cannot add images, so the real screenshot is NOT on the post. Options: add it as a comment with a photo, or make a new post (which needs a new form link). Remaining user action: review the form values in docs/submission-kit.md and press Submit (0/3 attempts, closes 29 Nov 23:59 IST).

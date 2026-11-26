@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ProviderError(Exception):
     """Raised when a data provider fails."""
+
     pass
 
 
@@ -44,10 +45,17 @@ class OpenMeteoProvider(BaseProvider):
 
     # Pollutant variables to request
     HOURLY_VARS = [
-        "pm10", "pm2_5", "carbon_monoxide", "nitrogen_dioxide",
-        "sulphur_dioxide", "ozone", "european_aqi",
-        "european_aqi_pm2_5", "european_aqi_pm10",
-        "european_aqi_nitrogen_dioxide", "european_aqi_ozone",
+        "pm10",
+        "pm2_5",
+        "carbon_monoxide",
+        "nitrogen_dioxide",
+        "sulphur_dioxide",
+        "ozone",
+        "european_aqi",
+        "european_aqi_pm2_5",
+        "european_aqi_pm10",
+        "european_aqi_nitrogen_dioxide",
+        "european_aqi_ozone",
         "european_aqi_sulphur_dioxide",
     ]
 
@@ -135,25 +143,33 @@ class OpenMeteoProvider(BaseProvider):
         for field, (name, unit) in pollutant_map.items():
             value = current.get(field)
             if value is not None:
-                if (isinstance(value, bool) or not isinstance(value, (int, float))
-                        or not math.isfinite(value) or value < 0):
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                    or value < 0
+                ):
                     quality_flags.append(f"invalid_{field}")
                     continue
                 if units.get(field, "").replace("μ", "µ") != unit:
                     quality_flags.append(f"unknown_unit_{field}")
                     continue
-                pollutants.append(Pollutant(
-                    name=name,
-                    value=float(value),
-                    unit=unit,
-                    averaging_period="model current timestep",
-                ))
+                pollutants.append(
+                    Pollutant(
+                        name=name,
+                        value=float(value),
+                        unit=unit,
+                        averaging_period="model current timestep",
+                    )
+                )
 
         # European AQI from Open-Meteo (do NOT relabel as Indian AQI)
         european_aqi = current.get("european_aqi")
         if european_aqi is not None and (
-            isinstance(european_aqi, bool) or not isinstance(european_aqi, (int, float))
-            or not math.isfinite(european_aqi) or european_aqi < 0
+            isinstance(european_aqi, bool)
+            or not isinstance(european_aqi, (int, float))
+            or not math.isfinite(european_aqi)
+            or european_aqi < 0
         ):
             quality_flags.append("invalid_index")
             european_aqi = None
@@ -231,14 +247,10 @@ class FixtureProvider(BaseProvider):
             index_value=75.0,
             category="Poor (fixture)",
             pollutants=[
-                Pollutant(name="PM2.5", value=120.0, unit="µg/m³",
-                          averaging_period="fixture"),
-                Pollutant(name="PM10", value=200.0, unit="µg/m³",
-                          averaging_period="fixture"),
-                Pollutant(name="NO₂", value=45.0, unit="µg/m³",
-                          averaging_period="fixture"),
-                Pollutant(name="O₃", value=30.0, unit="µg/m³",
-                          averaging_period="fixture"),
+                Pollutant(name="PM2.5", value=120.0, unit="µg/m³", averaging_period="fixture"),
+                Pollutant(name="PM10", value=200.0, unit="µg/m³", averaging_period="fixture"),
+                Pollutant(name="NO₂", value=45.0, unit="µg/m³", averaging_period="fixture"),
+                Pollutant(name="O₃", value=30.0, unit="µg/m³", averaging_period="fixture"),
             ],
             quality_flags=["fixture_data"],
             is_stale=False,

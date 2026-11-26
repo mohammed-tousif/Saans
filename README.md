@@ -1,46 +1,62 @@
 # Saans
 
-Local prototype of a household air-quality planner. Python/FastAPI serves a same-origin web interface. Gemini ranks eligible actions; source-backed text and schedule commitments are rendered by code. Missing AI credentials produce explicitly labelled fallback guidance.
+**Everyday air-quality planning for urban households.** Built for PromptWars Virtual, Challenge 06: Urban Air Quality Assistant.
 
-## Challenge and approach
+- **Live app:** https://saans-wwwc.onrender.com
+- **Demo video (2:13):** https://youtu.be/KyVVyveKvt8
+- **Stack:** Python 3.11 · FastAPI · Pydantic · Google Gemini (`google-genai`) · Open-Meteo CAMS · vanilla JS/CSS
 
-Chosen vertical: **PromptWars Challenge 06 — Urban Air Quality Assistant**. Saans helps an urban household choose practical indoor-air and lower-emission actions around daily commitments. The current implementation focuses on households; shared community coordination is not implemented.
+## The problem and the approach
 
-The user selects a city, budget, transport, household resources and routine. The provider normalizes city-level air data, including its source, timestamp and index scale. Deterministic rules remove actions that conflict with resources, budget or constraints. Gemini ranks up to three remaining action IDs; the server rejects unknown, repeated or malformed choices. Reviewed catalogue text supplies explanations, limitations and source links. If AI fails, the interface explicitly labels the rule-filtered fallback.
+City households see an air-quality number but rarely a practical next step that fits their day. Saans takes a household's city, fixed commitments (such as a school drop-off), budget, transport options and home resources. It returns up to three practical indoor-air and lower-emission actions, each with a reason, trade-off and cited source.
 
-The user can change a typed constraint, compare against the saved original plan, and accept the revision. Fixed routine times remain unchanged. Environmental data quality and AI availability are separate states.
+How a plan is made:
 
-## Assumptions
+1. **Live air data:** the provider fetches Open-Meteo CAMS model data for the city and normalizes it, labelling source, timestamp and index scale (European AQI, not India's AQI).
+2. **Deterministic eligibility:** rules in `app/rules.py` remove actions that conflict with the household's budget, resources, transport or constraints.
+3. **Gemini ranks, Saans explains:** Gemini receives a reduced summary and the eligible action IDs, and returns up to three IDs as schema-constrained JSON (`app/planner.py`). The server rejects unknown, repeated or malformed IDs. All rendered advice, limitations and citations come from the reviewed catalogue (`knowledge/`), so the model never writes factual claims.
+4. **What-if comparison:** users change a typed constraint (Metro unavailable, no purifier, no extra spending, more flexibility). The server re-plans against the stored original and shows actions added or removed. Fixed commitments are always preserved.
+5. **Honest failure:** if Gemini is unavailable, rule-filtered fallback guidance is clearly labelled. If air data is unavailable, the plan says so.
 
-- Open-Meteo/CAMS Global provides regional model data, approximately 45 km resolution, not street-level observations. European AQI is labelled explicitly; it is not India's AQI.
-- Household resource and budget selections are self-reported. Indoor pollution, route conditions and equipment effectiveness are not measured.
-- Guidance explains qualitative possibilities and tradeoffs, not measured health gains or calculated emissions savings. It does not replace medical advice.
-- Routine labels/times and additional notes are not sent to Gemini. A reduced summary includes city, resources, budget, transport and household-needs categories. Temporary server snapshots support comparison; the UI discloses this data use.
-- This is a single-worker prototype. A working fallback is not proof of successful GenAI. See [current compliance audit](docs/compliance-audit.md) for unresolved release gates and official rules.
+## Evaluation criteria: what we did
 
-## Start on Windows
+| Criterion | Implementation | Evidence |
+|---|---|---|
+| **Problem alignment** | Location-aware live air data; routines with preserved fixed times; indoor-air, exposure and sustainable-transport actions; explained trade-offs | Demo video; `app/rules.py`; `knowledge/actions.json` |
+| **Security** | Strict Content-Security-Policy (no inline script or style); no inline event handlers; all dynamic text HTML-escaped and only `http(s)` links rendered; 32 KiB request-body limit; typed and validated inputs; rate and concurrency limits; AI output validated against an allowlist; prompt-injection guard in the system instruction; upstream errors reduced to safe categories (no secrets or raw errors in responses or logs); `nosniff`, `DENY` framing, COOP, HSTS behind HTTPS | `app/security.py`, `app/planner.py`, `tests/test_hardening.py`, `tests/test_release.py` |
+| **Efficiency** | 10-minute per-city cache of live air data (CAMS updates hourly); circuit breaker that sends requests to the backup model for 5 minutes after the primary fails; bounded 10 s per-call and 25 s total AI deadlines; one retry with jitter; ETag revalidation for static assets; reduced Gemini payload | `app/main.py`, `app/planner.py`, `tests/test_hardening.py` |
+| **Testing** | 51 pytest tests (API, rules, AI recovery, security headers, CSP-safe markup, caching, breaker) plus Node unit tests for the frontend helpers; CI runs lint, format check and both suites on every push | `tests/`, `.github/workflows/ci.yml` |
+| **Accessibility** | axe-core (WCAG 2.1 AA + best practices) reports 0 violations on every view at desktop and 390 px mobile; landmarks; labelled dialog; keyboard-operable tabs (arrow keys) and action cards (Enter/Space); live regions for status; reduced-motion support; AA text contrast | Audit method in `docs/verification.md` |
+| **Code quality** | Typed Pydantic schemas; small single-purpose modules; ruff lint and format clean; locked dependencies (`uv.lock`, hashed `requirements.txt`) | `pyproject.toml`, CI workflow |
 
-From this folder, use the existing environment:
+## Run locally
 
 ```powershell
+uv sync --locked --extra dev
+copy .env.example .env   # add GEMINI_API_KEY locally; never commit it
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-For a fresh environment, install Python 3.11 and uv, then run `uv sync --locked --extra dev`. The runtime export in `requirements.txt` contains pinned versions and hashes. See docs/release.md for hosting configuration.
+`DATA_MODE=fixture` uses synthetic test data. The default, `live`, uses Open-Meteo CAMS. Without a Gemini key, plans use the labelled fallback.
 
-Copy `.env.example` to `.env` locally if needed. Configure `GEMINI_API_KEY` and an account-available `GEMINI_MODEL` without sharing secrets in chat. `DATA_MODE=fixture` is synthetic test data; the default is live Open-Meteo/CAMS. Review provider terms before public deployment.
+### Tests and checks
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q -o asyncio_default_fixture_loop_scope=function
-node --check app/static/app.js
+node --test tests/frontend/app.test.js
+.\.venv\Scripts\python.exe -m ruff check app tests
 ```
 
-## State and limits
+Tests force fixture data and blank AI credentials, so they make no network or paid model calls.
 
-The public app runs on Render. Live verification on 25 November 2026 confirmed CAMS model data, Gemini 3.5 Flash-Lite planning, and AI-assisted constraint comparison. Seven reviewed actions are enabled. Impact explanations are qualitative and indoor conditions are unmeasured. Comparison snapshots are held in process memory (up to 100), expire from use after 30 minutes, and are pruned on planning/comparison requests. Restarting clears them. Rate limits and snapshots are process-local.
+## Assumptions and limits
 
-Read HANDOFF.md, TASKS.md and the grounding correction register before changing code. See DESIGN.md for trust boundaries and known limits.
+- CAMS Global is regional model data (~45 km), not street-level observation.
+- Household resources and budget are self-reported; indoor air, routes and equipment effectiveness are not measured.
+- Guidance is qualitative. No measured health benefit or calculated emissions saving is claimed, and it is not medical advice.
+- Routine names, times and notes are never sent to Gemini. Temporary plan snapshots (max 100, 30-minute expiry) live in server memory for comparisons; the UI discloses this.
+- Single-worker deployment: rate limits, snapshots and caches are process-local. Shared community coordination is not implemented.
 
-## Release and submission
+## Project records
 
-[Open the public app](https://saans-wwwc.onrender.com). See the [release guide](docs/release.md) and [submission kit](docs/submission-kit.md). The official dashboard deadline is 29 November 2026 at 23:59 IST. The video is still pending.
+`DESIGN.md` covers trust boundaries; `docs/verification.md` holds dated evidence; `docs/release.md` covers hosting; `HANDOFF.md` and `TASKS.md` track work in progress.

@@ -60,13 +60,15 @@ const SAMPLE_PROFILES = {
 };
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadCities();
-  await loadSources();
-  setupEventListeners();
-  setupFlexibilitySlider();
-  updateSampleBannerForMode();
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCities();
+    await loadSources();
+    setupEventListeners();
+    setupFlexibilitySlider();
+    updateSampleBannerForMode();
+  });
+}
 
 async function loadCities() {
   try {
@@ -99,7 +101,31 @@ async function loadSources() {
   }
 }
 
+// Delegated UI actions: markup carries data-action attributes instead of inline
+// handlers, so the page can run under a strict Content-Security-Policy.
+const ACTIONS = {
+  'sample': el => loadSampleProfile(el.dataset.profile),
+  'add-routine': () => addRoutineBlock(),
+  'remove-routine': el => { el.closest('.routine-block')?.remove(); state.revision++; },
+  'switch-tab': el => switchTab(el.dataset.tab),
+  'close-compare': () => document.getElementById('compare-modal').close(),
+  'accept-revised': () => acceptRevisedPlan(),
+  'toggle-action': el => toggleAction(el),
+  'show-source': el => showSource(el.dataset.source),
+  'change-constraint': el => changeConstraint(el.dataset.change),
+};
+
+function handleAction(event) {
+  const el = event.target.closest('[data-action]');
+  const action = el && ACTIONS[el.dataset.action];
+  if (!action) return;
+  if (el.tagName === 'A') event.preventDefault();
+  action(el);
+}
+
 function setupEventListeners() {
+  document.addEventListener('click', handleAction);
+
   // Tab navigation
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
@@ -231,9 +257,9 @@ function addRoutineBlock(label = '', startTime = '09:00', endTime = '17:00') {
   block.innerHTML = `
     <input type="text" placeholder="e.g., School drop-off" value="${escapeHtml(label)}"
            aria-label="Commitment name" class="routine-label">
-    <input type="time" value="${startTime}" aria-label="Start time" class="routine-start">
-    <input type="time" value="${endTime}" aria-label="End time" class="routine-end">
-    <button type="button" class="btn-remove" onclick="this.parentElement.remove()" aria-label="Remove commitment">✕</button>
+    <input type="time" value="${escapeHtml(startTime)}" aria-label="Start time" class="routine-start">
+    <input type="time" value="${escapeHtml(endTime)}" aria-label="End time" class="routine-end">
+    <button type="button" class="btn-remove" data-action="remove-routine" aria-label="Remove commitment">✕</button>
   `;
   container.appendChild(block);
 }
@@ -374,7 +400,7 @@ function renderAirContext(ctx) {
   const loading = document.getElementById('air-loading');
   if (loading) loading.style.display = 'none';
 
-  const categoryColor = getCategoryColor(ctx.category);
+  const categoryClass = getCategoryClass(ctx.category);
   const isStale = ctx.is_stale;
   const sourceKind = ctx.source_kind === 'model' ? 'Model forecast' :
     ctx.source_kind === 'fixture' ? 'Fixture data' : ctx.source_kind === 'unavailable' ? 'Data unavailable' : 'Observation';
@@ -392,7 +418,7 @@ function renderAirContext(ctx) {
       pollutantsHtml += `
         <div class="pollutant-chip">
           <span class="pollutant-name">${escapeHtml(p.name)}</span>
-          <span class="pollutant-value">${p.value.toFixed(1)}</span>
+          <span class="pollutant-value">${Number(p.value).toFixed(1)}</span>
           <span class="pollutant-unit">${escapeHtml(p.unit)}</span>
         </div>`;
     });
@@ -408,12 +434,12 @@ function renderAirContext(ctx) {
     <p class="eyebrow">THE AIR AROUND YOU</p>
     <div class="air-header">
       <span class="air-location">${escapeHtml(ctx.location_label)}</span>
-      ${ctx.category ? `<span class="air-category" style="background:${categoryColor}">${escapeHtml(ctx.category)}</span>` : ''}
+      ${ctx.category ? `<span class="air-category ${categoryClass}">${escapeHtml(ctx.category)}</span>` : ''}
     </div>
     <div class="air-reading"><strong>${ctx.index_value == null ? '—' : Number(ctx.index_value).toFixed(0)}</strong><span>${escapeHtml(ctx.index_system || 'Index unavailable')}<small>${sourceKind} · ${timeDisplay}</small></span></div>
     <div class="air-meta">
       <span class="air-meta-item">${sourceKind}</span>
-      ${ctx.index_system ? `<span class="air-meta-item">${escapeHtml(ctx.index_system)}: ${ctx.index_value}</span>` : ''}
+      ${ctx.index_system ? `<span class="air-meta-item">${escapeHtml(ctx.index_system)}: ${escapeHtml(ctx.index_value)}</span>` : ''}
       <span class="air-meta-item">${timeDisplay}</span>
       <span class="air-meta-item">${escapeHtml(ctx.provider)}</span>
     </div>
@@ -484,14 +510,14 @@ function createActionCard(action, number) {
   const evidenceLinks = (action.evidence_ids || []).map(eid => {
     const src = state.sources[eid];
     if (src) {
-      return `<button type="button" class="evidence-link" onclick="showSource('${eid}')" tabindex="0" role="button"
-              title="${escapeHtml(src.title)}">${eid}</button>`;
+      return `<button type="button" class="evidence-link" data-action="show-source"
+              data-source="${escapeHtml(eid)}" title="${escapeHtml(src.title)}">${escapeHtml(eid)}</button>`;
     }
-    return `<span class="evidence-link">${eid}</span>`;
+    return `<span class="evidence-link">${escapeHtml(eid)}</span>`;
   }).join('');
 
   card.innerHTML = `
-    <div class="action-card-header" onclick="toggleAction(this)" tabindex="0"
+    <div class="action-card-header" data-action="toggle-action" tabindex="0"
          role="button" aria-expanded="false" aria-controls="${detailId}">
       <span class="action-number">${number}</span>
       <span class="action-title">${escapeHtml(action.title)}</span>
@@ -548,7 +574,7 @@ function toggleAction(headerEl) {
 function renderTimeline(timeline) {
   const container = document.getElementById('timeline');
   if (!timeline || timeline.length === 0) {
-    container.innerHTML = '<p class="empty-state" style="padding: 1rem;">Timeline not available.</p>';
+    container.innerHTML = '<p class="empty-state timeline-empty">Timeline not available.</p>';
     return;
   }
 
@@ -600,8 +626,8 @@ function renderConstraintButtons() {
   constraints.push({ label: 'More flexible today (+30 min)', icon: '+', change: 'more_flexibility' });
 
   container.innerHTML = constraints.map(c =>
-    `<button class="constraint-btn" onclick="changeConstraint('${escapeHtml(c.change)}')" type="button">
-      <span class="btn-icon">${c.icon}</span> ${escapeHtml(c.label)}
+    `<button class="constraint-btn" data-action="change-constraint" data-change="${escapeHtml(c.change)}" type="button">
+      <span class="btn-icon" aria-hidden="true">${escapeHtml(c.icon)}</span> ${escapeHtml(c.label)}
     </button>`
   ).join('');
 }
@@ -618,7 +644,7 @@ async function changeConstraint(changeDescription) {
   // Show comparison modal
   const modal = document.getElementById('compare-modal');
   const body = document.getElementById('compare-body');
-  body.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="spinner"></span><br>Generating revised plan...</div>';
+  body.innerHTML = '<div class="compare-loading" role="status"><span class="spinner"></span><br>Generating revised plan...</div>';
   modal.showModal();
 
   try {
@@ -674,15 +700,15 @@ function renderComparison(comparison) {
   let impactHtml = '';
   if (comparison.impact_notes && comparison.impact_notes.length > 0) {
     impactHtml = comparison.impact_notes.map(n =>
-      `<p style="font-size:0.85rem;color:var(--color-text-secondary);">${escapeHtml(n)}</p>`
+      `<p class="compare-note">${escapeHtml(n)}</p>`
     ).join('');
   }
 
   // Build revised actions list
   const revisedActions = (comparison.revised_plan.actions || []).map((a, i) =>
-    `<div style="display:flex;gap:0.5rem;align-items:center;padding:0.25rem 0;">
-      <span class="action-number" style="width:22px;height:22px;font-size:0.7rem;">${i + 1}</span>
-      <span style="font-size:0.85rem;">${escapeHtml(a.title)}</span>
+    `<div class="compare-action-row">
+      <span class="action-number action-number-sm">${i + 1}</span>
+      <span class="compare-action-title">${escapeHtml(a.title)}</span>
     </div>`
   ).join('');
 
@@ -699,7 +725,7 @@ function renderComparison(comparison) {
     <div class="compare-section">
       <div class="compare-section-title">Revised plan actions</div>
       ${revisedActions}
-      ${comparison.revised_plan.context_summary ? `<p style="font-size:0.85rem;margin-top:0.5rem;color:var(--color-text-secondary);">${escapeHtml(comparison.revised_plan.context_summary)}</p>` : ''}
+      ${comparison.revised_plan.context_summary ? `<p class="compare-note compare-summary">${escapeHtml(comparison.revised_plan.context_summary)}</p>` : ''}
     </div>
     ${impactHtml ? `
       <div class="compare-section">
@@ -768,14 +794,14 @@ function renderSources() {
   container.innerHTML = sourceIds.map(id => {
     const s = state.sources[id];
     return `
-      <div class="source-card" id="source-${id}">
+      <div class="source-card" id="source-${escapeHtml(id)}">
         <div>
           <span class="source-id">${escapeHtml(id)}</span>
           <span class="source-title">${escapeHtml(s.title)}</span>
         </div>
         <div class="source-org">${escapeHtml(s.organization)}</div>
         <div class="source-claim">${escapeHtml(s.supported_claim)}</div>
-        ${s.url ? `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" class="source-link">${escapeHtml(s.url)}</a>` : ''}
+        ${safeUrl(s.url) ? `<a href="${escapeHtml(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer" class="source-link">${escapeHtml(s.url)}</a>` : ''}
         ${s.limitations ? `<div class="source-limitations">${escapeHtml(s.limitations)}</div>` : ''}
       </div>`;
   }).join('');
@@ -792,7 +818,7 @@ function renderProvenance(ctx) {
   }
 
   card.innerHTML = `
-    <h3 class="subsection-title" style="margin-top:0;">Environmental Data Provenance</h3>
+    <h3 class="subsection-title provenance-title">Environmental Data Provenance</h3>
     <div class="provenance-row">
       <span class="provenance-label">Provider</span>
       <span class="provenance-value">${escapeHtml(ctx.provider)}</span>
@@ -804,7 +830,7 @@ function renderProvenance(ctx) {
     ${ctx.index_system ? `
     <div class="provenance-row">
       <span class="provenance-label">Index system</span>
-      <span class="provenance-value">${escapeHtml(ctx.index_system)} (${ctx.index_value})</span>
+      <span class="provenance-value">${escapeHtml(ctx.index_system)} (${escapeHtml(ctx.index_value)})</span>
     </div>` : ''}
     <div class="provenance-row">
       <span class="provenance-label">Data time</span>
@@ -812,12 +838,12 @@ function renderProvenance(ctx) {
     </div>
     <div class="provenance-row">
       <span class="provenance-label">Location</span>
-      <span class="provenance-value">${escapeHtml(ctx.location_label)} (${ctx.latitude.toFixed(2)}, ${ctx.longitude.toFixed(2)})</span>
+      <span class="provenance-value">${escapeHtml(ctx.location_label)} (${Number(ctx.latitude).toFixed(2)}, ${Number(ctx.longitude).toFixed(2)})</span>
     </div>
     ${ctx.spatial_resolution_km ? `
     <div class="provenance-row">
       <span class="provenance-label">Spatial resolution</span>
-      <span class="provenance-value">~${ctx.spatial_resolution_km} km (regional, not street-level)</span>
+      <span class="provenance-value">~${escapeHtml(ctx.spatial_resolution_km)} km (regional, not street-level)</span>
     </div>` : ''}
     <div class="provenance-row">
       <span class="provenance-label">Attribution</span>
@@ -826,7 +852,7 @@ function renderProvenance(ctx) {
     ${ctx.is_stale ? `
     <div class="provenance-row">
       <span class="provenance-label">Freshness</span>
-      <span class="provenance-value" style="color:var(--color-warning);">Stale — older than expected</span>
+      <span class="provenance-value provenance-stale">Stale — older than expected</span>
     </div>` : ''}
   `;
 }
@@ -867,26 +893,42 @@ function showError(message) {
     <div class="error-state">
       <h3>Something went wrong</h3>
       <p>${escapeHtml(message)}</p>
-      <button class="btn btn-secondary" onclick="switchTab('setup')" style="margin-top:0.5rem;">Back to setup</button>
+      <button type="button" class="btn btn-secondary error-back" data-action="switch-tab" data-tab="setup">Back to setup</button>
     </div>`;
 }
 
 // --- Utility ---
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+// Escapes text for HTML element content and quoted attribute values.
 function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, ch => HTML_ESCAPES[ch]);
 }
 
-function getCategoryColor(category) {
-  if (!category) return 'var(--color-text-tertiary)';
+// Only http(s) links from the source catalogue are rendered as clickable links.
+function safeUrl(url) {
+  try {
+    const parsed = new URL(String(url));
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function getCategoryClass(category) {
+  if (!category) return 'aq-unknown';
   const cat = category.toLowerCase();
-  if (cat.includes('good')) return 'var(--color-aq-good)';
-  if (cat.includes('fair')) return 'var(--color-aq-fair)';
-  if (cat.includes('moderate')) return 'var(--color-aq-moderate)';
-  if (cat.includes('poor') && !cat.includes('very') && !cat.includes('extreme')) return 'var(--color-aq-poor)';
-  if (cat.includes('very poor')) return 'var(--color-aq-very-poor)';
-  if (cat.includes('extreme') || cat.includes('hazard') || cat.includes('severe')) return 'var(--color-aq-extreme)';
-  return 'var(--color-text-secondary)';
+  if (cat.includes('extreme') || cat.includes('hazard') || cat.includes('severe')) return 'aq-extreme';
+  if (cat.includes('very poor')) return 'aq-very-poor';
+  if (cat.includes('poor')) return 'aq-poor';
+  if (cat.includes('moderate')) return 'aq-moderate';
+  if (cat.includes('fair')) return 'aq-fair';
+  if (cat.includes('good')) return 'aq-good';
+  return 'aq-unknown';
+}
+
+// Exposed for Node's built-in test runner; ignored in the browser.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { escapeHtml, safeUrl, getCategoryClass };
 }

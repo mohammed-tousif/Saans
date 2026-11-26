@@ -84,3 +84,10 @@ Next three tasks: record and upload the live demo, confirm the organizer mention
 - The Gemini input/output in the video is a local capture from the deployed planner code with the same fictional profile, labelled as such on screen. The live request body is not exposed by the app, and adding a debug endpoint to production was rejected.
 - The demo constraint is chosen to match an action the AI actually selected. A take whose selection could not show a change was discarded rather than forced.
 - output/ stays untracked: the video (7.7 MB) would push the repo toward the 10 MB limit.
+
+
+## 26 November 2026 — hardening choices (Claude Code)
+- CSP allows Google Fonts rather than self-hosting the fonts, to keep the diff small; no 'unsafe-inline' anywhere.
+- The air cache applies only in live mode, so fixture tests stay deterministic. The breaker opens only for transient errors (5xx, timeout, 429) on a distinct primary.
+- One muted text color replaces 12 near-identical sage tones to pass AA; the visual hierarchy stays the same.
+- Frontend tests use Node's built-in runner (no new npm dependencies in the repo).

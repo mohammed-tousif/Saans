@@ -38,7 +38,9 @@ async def test_transient_failure_retries_once_and_preserves_truth(monkeypatch, c
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("error", [ClientError(403, {}), ClientError(404, {}), ValueError("bad IDs")])
+@pytest.mark.parametrize(
+    "error", [ClientError(403, {}), ClientError(404, {}), ValueError("bad IDs")]
+)
 async def test_permanent_or_invalid_response_is_not_retried(monkeypatch, error):
     calls = []
 

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATA_MODE: fixture
+      GEMINI_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev
+      - name: Lint and format check
+        run: |
+          uv run ruff check app tests
+          uv run ruff format --check app tests
+      - name: Frontend syntax and unit tests
+        run: |
+          node --check app/static/app.js
+          node --test tests/frontend/app.test.js
+      - name: Backend tests
+        run: uv run pytest -q -o asyncio_default_fixture_loop_scope=function

@@ -58,7 +58,11 @@ def classify_pollution_level(context: EnvironmentalContext) -> str:
         return "unknown"
 
     # Fallback to European AQI if available
-    if context.index_value is not None and context.index_system and "European" in context.index_system:
+    if (
+        context.index_value is not None
+        and context.index_system
+        and "European" in context.index_system
+    ):
         if context.index_value <= 20:
             return "low"
         elif context.index_value <= 40:
@@ -123,7 +127,9 @@ def filter_eligible_actions(
         if action.id == "ACT015" and not profile.has_children:
             continue
         # Check budget
-        if BUDGET_ORDER.get(BudgetBand(action.budget_band), 0) > BUDGET_ORDER.get(profile.budget_band, 0):
+        if BUDGET_ORDER.get(BudgetBand(action.budget_band), 0) > BUDGET_ORDER.get(
+            profile.budget_band, 0
+        ):
             continue
 
         # Check required resources
@@ -158,10 +164,12 @@ def filter_eligible_actions(
         eligible.append(action)
 
     # Sort: zero-cost first, then by purpose (exposure before emissions)
-    eligible.sort(key=lambda a: (
-        BUDGET_ORDER.get(BudgetBand(a.budget_band), 0),
-        0 if a.purpose == "exposure" else 1,
-    ))
+    eligible.sort(
+        key=lambda a: (
+            BUDGET_ORDER.get(BudgetBand(a.budget_band), 0),
+            0 if a.purpose == "exposure" else 1,
+        )
+    )
 
     return eligible
 
@@ -223,9 +231,13 @@ def check_fixed_constraints_preserved(
             affected = action.get("affected_routine", "")
             if block.label.lower() in affected.lower():
                 # An action references a fixed routine — check it doesn't suggest moving it
-                if "move" in action.get("reason", "").lower() or "reschedule" in action.get("reason", "").lower():
+                if (
+                    "move" in action.get("reason", "").lower()
+                    or "reschedule" in action.get("reason", "").lower()
+                ):
                     violations.append(
-                        f"Action '{action.get('title', '')}' attempts to move fixed block '{block.label}' "
+                        f"Action '{action.get('title', '')}' attempts to move fixed block "
+                        f"'{block.label}' "
                         f"({block.start_time}–{block.end_time})"
                     )
 

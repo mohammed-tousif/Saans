@@ -12,7 +12,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-
 # --- Enums ---
 
 
@@ -25,7 +24,7 @@ class DataSourceKind(str, enum.Enum):
 
 class BudgetBand(str, enum.Enum):
     ZERO = "zero"
-    LOW = "low"       # under ₹500/month
+    LOW = "low"  # under ₹500/month
     MODERATE = "moderate"  # ₹500–2000/month
     FLEXIBLE = "flexible"  # above ₹2000/month
 
@@ -64,6 +63,7 @@ class Pollutant(BaseModel):
 
 class EnvironmentalContext(BaseModel):
     """Normalized environmental record from any provider."""
+
     provider: str
     source_url: str
     source_kind: DataSourceKind
@@ -90,6 +90,7 @@ class EnvironmentalContext(BaseModel):
 
 class RoutineBlock(BaseModel):
     """A fixed time commitment in the household's day."""
+
     label: str = Field(..., max_length=100, description="e.g. 'School drop-off'")
     start_time: str = Field(..., pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$", description="HH:MM format")
     end_time: str = Field(..., pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
@@ -105,6 +106,7 @@ class RoutineBlock(BaseModel):
 
 class HouseholdProfile(BaseModel):
     """Household inputs for plan generation."""
+
     city: str = Field(..., min_length=1, max_length=100)
     routine_blocks: list[RoutineBlock] = Field(default_factory=list, max_length=12)
     available_transport: list[TransportMode] = [TransportMode.WALK, TransportMode.PUBLIC_TRANSIT]
@@ -126,6 +128,7 @@ class HouseholdProfile(BaseModel):
 
 class ActionRecord(BaseModel):
     """A reviewed action from the curated knowledge catalogue."""
+
     id: str
     title: str
     purpose: ActionPurpose
@@ -147,6 +150,7 @@ class ActionRecord(BaseModel):
 
 class PlanAction(BaseModel):
     """A single action in the generated plan."""
+
     action_id: str
     title: str
     time_window: str = ""
@@ -160,6 +164,7 @@ class PlanAction(BaseModel):
 
 class PlanResponse(BaseModel):
     """Complete plan response from the API."""
+
     actions: list[PlanAction] = []
     timeline: list[dict] = []  # [{period, actions, notes}]
     context_summary: str = ""
@@ -189,8 +194,14 @@ class PlanRequest(BaseModel):
 
 
 ConstraintChange = Literal[
-    "purifier_on", "purifier_off", "budget_zero", "budget_low",
-    "transit_on", "transit_off", "more_flexibility", "keep_schedule",
+    "purifier_on",
+    "purifier_off",
+    "budget_zero",
+    "budget_low",
+    "transit_on",
+    "transit_off",
+    "more_flexibility",
+    "keep_schedule",
 ]
 
 
@@ -211,6 +222,7 @@ class CompareResponse(BaseModel):
 
 class SourceRecord(BaseModel):
     """Curated source metadata."""
+
     id: str
     title: str
     url: str

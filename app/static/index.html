@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/clay.css">
 </head>
@@ -26,7 +27,8 @@
         </header>
 
         <!-- Navigation -->
-        <nav class="tab-nav" role="tablist" aria-label="Main navigation">
+        <nav class="nav-landmark" aria-label="Main navigation">
+        <div class="tab-nav" role="tablist" aria-label="Sections">
             <button class="tab active" role="tab" aria-selected="true" data-tab="setup" id="tab-setup">
                 <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4zM9 20v-7h6v7"/></svg></span>
                 <span class="tab-label">Your household</span>
@@ -43,6 +45,7 @@
                 <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h7v16H4zm9 0h7v16h-7M7 8h1m8 0h1M7 12h1m8 0h1"/></svg></span>
                 <span class="tab-label">The evidence</span>
             </button>
+        </div>
         </nav>
 
         <!-- Main Content -->
@@ -66,10 +69,10 @@
                         <span class="sample-kicker">TAKE A LOOK AROUND</span><strong>Start with a day you know.</strong><span>Try a fictional household, or make this your own below.</span>
                     </div>
                     <div class="sample-banner-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('parent')" id="btn-sample-parent">
+                        <button class="btn btn-secondary btn-sm" data-action="sample" data-profile="parent" id="btn-sample-parent">
                             School-run parent <span aria-hidden="true">↗</span>
                         </button>
-                        <button class="btn btn-secondary btn-sm" onclick="loadSampleProfile('worker')" id="btn-sample-worker">
+                        <button class="btn btn-secondary btn-sm" data-action="sample" data-profile="worker" id="btn-sample-worker">
                             Outdoor worker <span aria-hidden="true">↗</span>
                         </button>
                     </div>
@@ -92,7 +95,7 @@
                         <legend class="form-legend"><span class="step-number">02</span> What stays on your calendar</legend>
                         <p class="form-help">Add time blocks that cannot move (school, work, etc.)</p>
                         <div id="routine-blocks" class="routine-blocks"></div>
-                        <button type="button" class="btn btn-ghost btn-sm" onclick="addRoutineBlock()" id="btn-add-routine">
+                        <button type="button" class="btn btn-ghost btn-sm" data-action="add-routine" id="btn-add-routine">
                             + Add commitment
                         </button>
                     </fieldset>
@@ -195,7 +198,7 @@
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary btn-lg" id="btn-create-plan">
                             <span class="btn-text">Find my everyday plan <span aria-hidden="true">→</span></span>
-                            <span class="btn-loading" aria-hidden="true" style="display:none;">
+                            <span class="btn-loading initially-hidden" aria-hidden="true">
                                 <span class="spinner"></span> Generating...
                             </span>
                         </button>
@@ -207,7 +210,7 @@
                             routine count, an environmental summary, and eligible action details. Routine names, times,
                             and additional notes are excluded from the Gemini request. Google's processing is governed
                             by its API terms. No account or login is required.
-                            <a href="#" onclick="switchTab('sources'); return false;">Learn about our data sources.</a>
+                            <a href="#view-sources" data-action="switch-tab" data-tab="sources">Learn about our data sources.</a>
                         </p></details>
                     </div>
                 </form>
@@ -217,14 +220,14 @@
             <section class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today" hidden>
                 <div class="view-header compact"><p class="eyebrow">YOUR DAY, CONSIDERED</p><h2>A plan with<br>room for real life.</h2><p>Practical choices, with the reasons behind them.</p></div>
                 <!-- Air Quality Context -->
-                    <div class="air-loading" id="air-loading" style="display:none;" role="status">
+                    <div class="air-loading initially-hidden" id="air-loading" role="status">
                         <span class="spinner"></span>
                         <span>Loading environmental data...</span>
                     </div>
                 <div class="air-context-card" id="air-context"></div>
 
                 <!-- Plan Content -->
-                <div id="plan-content" style="display:none;">
+                <div id="plan-content" class="initially-hidden">
                     <!-- Context Summary -->
                     <div class="context-summary" id="plan-summary"></div>
 
@@ -240,7 +243,7 @@
                     <div class="timeline" id="timeline"></div>
 
                     <!-- Warnings -->
-                    <div class="warnings" id="warnings" style="display:none;"></div>
+                    <div class="warnings initially-hidden" id="warnings"></div>
 
                     <!-- Change My Day -->
                     <div class="change-my-day" id="change-my-day">
@@ -255,7 +258,7 @@
                     <div class="empty-icon" aria-hidden="true">📋</div>
                     <h3>No plan yet</h3>
                     <p>Set up your household to create your first plan.</p>
-                    <button class="btn btn-primary" onclick="switchTab('setup')">Set up household</button>
+                    <button type="button" class="btn btn-primary" data-action="switch-tab" data-tab="setup">Set up household</button>
                 </div>
             </section>
 
@@ -274,7 +277,7 @@
                 <div id="home-actions" class="actions-list">
                     <div class="empty-state">
                         <p>Create a plan first to see home-specific recommendations.</p>
-                        <button class="btn btn-primary" onclick="switchTab('setup')">Set up household</button>
+                        <button type="button" class="btn btn-primary" data-action="switch-tab" data-tab="setup">Set up household</button>
                     </div>
                 </div>
             </section>
@@ -286,7 +289,7 @@
                     <p>Where our information comes from and what it means.</p>
                 </div>
 
-                <div id="env-provenance" class="provenance-card" style="display:none;"></div>
+                <div id="env-provenance" class="provenance-card initially-hidden"></div>
 
                 <h3 class="subsection-title">Evidence Sources</h3>
                 <div id="sources-list" class="sources-list">
@@ -298,16 +301,16 @@
         </main>
 
         <!-- Compare Modal -->
-        <dialog id="compare-modal" class="compare-modal">
+        <dialog id="compare-modal" class="compare-modal" aria-labelledby="compare-title">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Plan Comparison</h2>
-                    <button class="btn-close" onclick="document.getElementById('compare-modal').close()" aria-label="Close comparison">✕</button>
+                    <h2 id="compare-title">Plan Comparison</h2>
+                    <button type="button" class="btn-close" data-action="close-compare" aria-label="Close comparison">✕</button>
                 </div>
-                <div class="modal-body" id="compare-body"></div>
+                <div class="modal-body" id="compare-body" tabindex="0" aria-live="polite" aria-label="Plan comparison details"></div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="document.getElementById('compare-modal').close()">Close</button>
-                    <button class="btn btn-primary" id="btn-accept-revised" onclick="acceptRevisedPlan()">Use revised plan</button>
+                    <button type="button" class="btn btn-secondary" data-action="close-compare">Close</button>
+                    <button type="button" class="btn btn-primary" id="btn-accept-revised" data-action="accept-revised">Use revised plan</button>
                 </div>
             </div>
         </dialog>

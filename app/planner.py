@@ -213,6 +213,7 @@ async def _select_with_gemini(
     eligible: list[ActionRecord],
     model: str,
 ) -> list[ActionRecord]:
+    """Ask Gemini for ranked IDs using a reduced payload, then validate its selection."""
     from google import genai
 
     # Build a minimal payload: only the fields the model needs for ranking.
@@ -311,6 +312,7 @@ FALLBACK_MESSAGES = {
 
 
 def _fallback_actions(eligible: list[ActionRecord]) -> list[ActionRecord]:
+    """Keep rule order while making room for emissions advice when eligible."""
     selected = eligible[:3]
     if not selected or any(action.purpose == ActionPurpose.EMISSIONS for action in selected):
         return selected

@@ -218,5 +218,16 @@ Next three tasks: read the attempt 2 score and compare it with attempt 1 per cri
 - [x] Codex moved 13 development records and repaired their references.
 - [x] Documented the frontend and Python code, enforced Ruff documentation and named comparisons, and encapsulated planning state.
 - [x] Passed the local backend, static, frontend and browser checks. Matched 8,192 eligibility results, OpenAPI JSON and CSP to f10d5d6.
-- [ ] Publish to master and verify exact-commit CI, Render assets, live health and an AI response.
+- [x] Published 821cdc3 to master and verified exact-commit CI, Render assets, live health and an AI response.
 - [ ] User decides whether to submit attempt three before 29 November 2026 at 23:59 IST.
+- [ ] Record the attempt-three score and criterion breakdown if the user submits.
+
+## 28 November — contributor readability
+
+- [x] Document the private helpers, tests and fixture code. Explain browser state and the stylesheet cascade. Trace plan and comparison requests in the README.
+- [x] Verified executable and browser equivalence, public OpenAPI JSON and the fixture test suites.
+- [ ] Publish these local edits if requested.
+
+
+## 28 November 2026 — readability review and cross-verification (Claude Code)
+Claude Code reviewed Codex's 28 November readability pass in the working tree, on top of 821cdc3, and made two comment-only edits. **Cross-verification of Codex's pass:** Python ASTs (docstrings removed) for all 13 changed .py files are identical to 821cdc3. The espree ASTs of all 5 browser modules, eslint.config.js, playwright.config.cjs and both frontend test files are identical. index.html is identical once comments are removed. Chromium parses clay.css (152 rules) and styles.css (186 rules) into identical rule lists, so the 1,247-line clay.css diff is formatting only. The OpenAPI schema hash is identical (ac8fbd3bce5c). **Behavior:** filter_eligible_actions gives identical ordered IDs for all 8,192 profiles versus f10d5d6, so the committed state-class refactor 821cdc3 is behavior-neutral. **README flow trace:** the 'Follow a request through the code' steps match the code (collectProfile → requestJson('/api/plan') with the revision guard → planning_limiter.slot → environment/get_city → generate_plan → snapshot_store.remember; compare uses snapshot_store.get, a fingerprint check, then apply_changes on the stored original). **Claude Code edits (documentation only, AST and OpenAPI re-verified):** (1) app/main.py: the comment on `_END_OPENAPI_DESCRIPTION` now explains why it exists (keeps maintainer docstrings out of /openapi.json), not just the mechanism; (2) app/providers.py: the ProviderError docstring now states that messages are log-only and that environment() turns failures into an uncached, labelled 'unavailable' record. **Checks run in fixture mode (actual):** ruff clean (D and PLR2004 enforced), ruff format clean (17 files), mypy clean (10 files), 73 pytest passed, 90% branch coverage, node --check, 2 Node tests, ESLint and Prettier clean, 6 Playwright Chromium tests passed. The attempt-3 changes text in docs/submission-kit.md is accurate against these results. The GenAI text and links are unchanged. Next three tasks: commit and push this pass, confirm CI and the Render deploy; submit attempt 3 (user-authorized) with the prepared text; record the final score.

@@ -68,6 +68,16 @@ JavaScript uses native modules, camelCase names, two-space indentation and singl
 
 CI runs the static checks, backend coverage and browser tests from a clean checkout. Browser tests use fixture data so they can reproduce stale-response, comparison, accessibility and validation cases without Gemini.
 
+## Follow a request through the code
+
+1. `app/static/profile.js` reads the household form. `app/static/app.js` sends that profile to `/api/plan` through `api.js` and saves the current form revision so late responses cannot overwrite an edited setup.
+2. `app/main.py` takes a planning slot from `planning_state.py` and resolves the household's city. `providers.py` normalizes live CAMS data or returns labelled fixture data when running local tests.
+3. `app/rules.py` filters the reviewed catalogue in `knowledge/` using the household's resources, budget and air context. `planner.py` lets Gemini rank eligible IDs when available and otherwise uses a rule-based fallback. The server builds the plan from reviewed action text.
+4. `app/static/views.js` renders the plan and its sources using DOM helpers from `dom.js`. `styles.css` defines the base layout and components. `clay.css` is loaded last and applies the theme and sidebar layout.
+5. A what-if request to `/api/compare` looks up the saved original, applies an allowed change to a copy, then makes a revised plan. The browser displays it separately until the user accepts it.
+
+Start with a test that follows the path you are changing. Python tests cover request bounds, eligibility and failure recovery. The Playwright tests under `tests/frontend/` exercise the full browser flow with synthetic data.
+
 ## Assumptions and limits
 
 - CAMS Global is regional model data (~45 km), not street-level observation.

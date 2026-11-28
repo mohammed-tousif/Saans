@@ -117,6 +117,6 @@ Next three tasks: read the attempt 2 score and compare it with attempt 1 per cri
 
 ## Attempt three candidate changes (775/1024)
 
-Copy the paragraph below into “Describe the changes/updates made in the deployed version” only after the candidate is live. Keep the GenAI field text and existing links.
+Verified on Render at `821cdc3`. [GitHub Actions passed](https://github.com/mohammed-tousif/Saans/actions/runs/45870090463). Copy the paragraph below into “Describe the changes/updates made in the deployed version”. Keep the GenAI field text and existing links.
 
 This release keeps Saans's planning flow and advice intact. It moves development records out of the repository root and documents the Python interfaces and five browser modules. The planning limiter, comparison snapshots, live air cache and Gemini circuit breaker now have separate typed owners, with tests for admission, expiry, eviction and recovery. Ruff enforces Google-style docstrings and named comparison thresholds in application code. The ordered eligible actions matched the previous release in all 8,192 household and air-data cases. The OpenAPI schema, content security policy and executable browser code also matched. The suite passes 73 backend tests with 90% coverage, two frontend unit tests and six Chromium tests, including desktop and mobile accessibility.

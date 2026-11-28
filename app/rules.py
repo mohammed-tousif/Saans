@@ -68,6 +68,7 @@ def classify_pollution_level(context: EnvironmentalContext) -> PollutionLevel:
 
 
 def _available_resources(profile: HouseholdProfile) -> set[str]:
+    """Translate household inputs into the resource keys used by the catalogue."""
     home_resources = {
         "purifier": profile.has_purifier,
         "exhaust_fan": profile.has_exhaust_fan,
@@ -83,6 +84,7 @@ def _available_resources(profile: HouseholdProfile) -> set[str]:
 def _contraindications(
     profile: HouseholdProfile, pollution_level: PollutionLevel, resources: set[str]
 ) -> set[str]:
+    """Derive the catalogue exclusions that apply to this household and air context."""
     flags = {
         "mobility_limitation": profile.has_mobility_limitation,
         "no_flexible_time": profile.flexibility_minutes < MIN_FLEXIBILITY_MINUTES,
@@ -95,6 +97,7 @@ def _contraindications(
 
 
 def _matches_pollution(action: ActionRecord, level: PollutionLevel) -> bool:
+    """Allow unconditional actions or match the action's required pollution band."""
     conditions = action.eligible_conditions
     if not conditions or "any_pollution" in conditions:
         return True
@@ -108,6 +111,7 @@ def _eligible_for_household(
     resources: set[str],
     contraindications: set[str],
 ) -> bool:
+    """Require an enabled action whose audience, cost, resources and exclusions all fit."""
     return (
         action.enabled
         and (action.id != FAMILY_ACTIVITY_ID or profile.has_children)

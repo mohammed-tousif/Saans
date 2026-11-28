@@ -56,9 +56,11 @@ async def _read_body(receive: Receive, max_bytes: int) -> bytes | None:
 
 
 def _replay_body(body: bytes, receive: Receive) -> Receive:
+    """Rebuild the ASGI receive channel with the validated body delivered once."""
     pending: bytes | None = body
 
     async def replay() -> Message:
+        """Serve the buffered request first, then resume reading from the original channel."""
         nonlocal pending
         if pending is None:
             return await receive()
@@ -84,6 +86,7 @@ class RequestGuards:
             return
 
         async def protected_send(message: Message) -> None:
+            """Add security headers when the downstream app starts an HTTP response."""
             if message["type"] == "http.response.start":
                 headers = [*message.get("headers", []), *security_headers(scope)]
                 message = {**message, "headers": headers}

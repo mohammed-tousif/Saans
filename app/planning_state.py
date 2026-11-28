@@ -47,6 +47,7 @@ class PlanningLimiter:
             self._request_times.popleft()
         if self._active >= max_concurrent or len(self._request_times) >= max_per_minute:
             raise HTTPException(429, "Planning is busy. Please try again shortly.")
+        # Check and record admission before yielding so concurrent requests see the slot.
         self._request_times.append(now)
         self._active += 1
         try:
@@ -73,6 +74,7 @@ class SnapshotStore:
         """Assign an ID to the plan and retain deep copies of the comparison inputs."""
         self.prune()
         plan.plan_id = uuid.uuid4().hex
+        # Keep independent copies so later edits cannot change the baseline.
         self._snapshots[plan.plan_id] = (
             self._clock(),
             profile.model_copy(deep=True),

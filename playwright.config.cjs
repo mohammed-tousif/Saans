@@ -1,3 +1,4 @@
+// Launch an isolated fixture server so browser tests cannot depend on live AI or air data.
 const { defineConfig } = require('@playwright/test');
 
 const baseURL = 'http://127.0.0.1:8019';

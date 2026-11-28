@@ -104,39 +104,34 @@ export function setupFlexibilitySlider() {
  * @returns {void}
  */
 export function populateProfile(sample) {
-  // Set city
   document.getElementById('city-select').value = sample.city;
 
-  // Set routine blocks
+  // Replace rows so a sample or revised profile cannot leave old commitments behind.
   const container = document.getElementById('routine-blocks');
   container.replaceChildren();
   sample.routine_blocks.forEach((block) => {
     addRoutineBlock(block.label, block.start_time, block.end_time);
   });
 
-  // Set transport
   document.querySelectorAll('[name="transport"]').forEach((cb) => {
     cb.checked = sample.available_transport.includes(cb.value);
   });
 
-  // Set budget
   document.querySelectorAll('[name="budget"]').forEach((r) => {
     r.checked = r.value === sample.budget_band;
   });
 
-  // Set resources
   document.getElementById('has-purifier').checked = sample.has_purifier;
   document.getElementById('has-exhaust-fan').checked = sample.has_exhaust_fan;
   document.getElementById('has-cross-ventilation').checked = sample.has_cross_ventilation;
   document.getElementById('cooking-fuel').value = sample.indoor_cooking_fuel;
 
-  // Set household needs
   document.getElementById('has-children').checked = sample.has_children;
   document.getElementById('has-elderly').checked = sample.has_elderly;
   document.getElementById('has-respiratory').checked = sample.has_respiratory_concern;
   document.getElementById('has-mobility').checked = !!sample.has_mobility_limitation;
 
-  // Set flexibility
+  // Assigning a slider value does not emit input, so update its readout as well.
   const slider = document.getElementById('flexibility');
   slider.value = sample.flexibility_minutes;
   document.getElementById('flexibility-value').textContent = `${sample.flexibility_minutes} min`;
@@ -181,7 +176,7 @@ export function collectProfile() {
     return null;
   }
 
-  // Collect routine blocks
+  // An unfinished row is a draft. Send complete commitments as fixed blocks.
   const routineBlocks = [];
   document.querySelectorAll('.routine-block').forEach((block) => {
     const label = block.querySelector('.routine-label').value.trim();
@@ -198,12 +193,11 @@ export function collectProfile() {
     }
   });
 
-  // Collect transport
+  // Send option keys expected by the API. An empty selection falls back to walking.
   const transport = [...document.querySelectorAll('[name="transport"]:checked')].map(
     (cb) => cb.value,
   );
 
-  // Collect budget
   const budget = document.querySelector('[name="budget"]:checked')?.value || 'zero';
 
   return {

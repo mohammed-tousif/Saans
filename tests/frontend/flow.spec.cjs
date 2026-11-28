@@ -1,3 +1,4 @@
+// Exercise the same page and API a user sees, using a local fixture server.
 const { test, expect } = require('@playwright/test');
 
 test('keyboard flow creates and revises a plan with fixed commitments', async ({ page }) => {
@@ -73,6 +74,11 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.addInitScript({ path: require.resolve('axe-core/axe.min.js') });
     await page.goto('/');
+    /**
+     * Check a settled view for accessibility violations and horizontal overflow.
+     * @param {string} name View label shown if the assertion fails.
+     * @returns {Promise<void>}
+     */
     const audit = async (name) => {
       // Measure contrast on the settled view, after the entrance fade and fonts.
       await page.evaluate(async () => {
@@ -122,6 +128,7 @@ for (const viewport of [
 }
 
 test('ignores a plan response after its submitted profile changes', async ({ page }) => {
+  // Hold the request until the test edits the form to make the race deterministic.
   const requestStarted = Promise.withResolvers();
   const releaseResponse = Promise.withResolvers();
   await page.route('**/api/plan', async (route) => {

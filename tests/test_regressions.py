@@ -1,3 +1,5 @@
+"""Cover provider normalization, action selection and public planning API contracts."""
+
 from datetime import datetime, timezone
 
 import pytest
@@ -12,6 +14,7 @@ from app.schemas import HouseholdProfile, RoutineBlock
 
 
 def provider_data(time="2026-11-18T19:00", offset=19800):
+    """Build a small CAMS-shaped response with configurable clock metadata."""
     return {
         "current": {"time": time, "pm2_5": 12, "european_aqi": 25},
         "current_units": {"pm2_5": "μg/m³"},
@@ -20,6 +23,7 @@ def provider_data(time="2026-11-18T19:00", offset=19800):
 
 
 def parse(data):
+    """Normalize provider data with a fixed request location and retrieval time."""
     return OpenMeteoProvider()._parse_response(
         data, 28.6, 77.2, "Delhi", datetime(2026, 11, 18, 14, tzinfo=timezone.utc)
     )
@@ -37,6 +41,7 @@ def parse(data):
     ],
 )
 def test_timezone_and_freshness(value, offset, stale, hour):
+    """Check how offset-aware observations and unusable timestamps affect freshness."""
     context = parse(provider_data(value, offset))
     assert context.is_stale is stale
     assert context.spatial_resolution_km == 45
@@ -50,6 +55,7 @@ def test_timezone_and_freshness(value, offset, stale, hour):
 
 @pytest.mark.parametrize("value", [-1, float("nan"), float("inf"), "bad", True])
 def test_invalid_measurements_are_not_displayed(value):
+    """Reject invalid pollutant and index values while retaining quality flags."""
     data = provider_data()
     data["current"]["pm2_5"] = value
     data["current"]["european_aqi"] = value
@@ -59,6 +65,7 @@ def test_invalid_measurements_are_not_displayed(value):
 
 
 def test_unknown_units_and_missing_data_are_not_zero():
+    """Check that missing or unverifiable values remain unavailable."""
     data = provider_data()
     data["current_units"] = {}
     data["current"]["european_aqi"] = None
@@ -68,6 +75,7 @@ def test_unknown_units_and_missing_data_are_not_zero():
 
 @pytest.mark.parametrize("unit", [None, 42, ["µg/m³"]])
 def test_malformed_unit_does_not_discard_the_rest_of_the_reading(unit):
+    """Keep the valid pollutant and index when another pollutant has a bad unit."""
     data = provider_data()
     data["current_units"]["pm2_5"] = unit
     data["current"].update(pm10=21)
@@ -79,6 +87,7 @@ def test_malformed_unit_does_not_discard_the_rest_of_the_reading(unit):
 
 
 def test_malformed_provider_coordinates_use_requested_location():
+    """Use the requested location when the response has invalid coordinates."""
     data = {**provider_data(), "latitude": None, "longitude": 900}
     context = parse(data)
     assert (context.latitude, context.longitude) == (28.6, 77.2)
@@ -86,12 +95,14 @@ def test_malformed_provider_coordinates_use_requested_location():
 
 
 def test_eligibility_combines_catalogue_conditions_and_user_needs():
+    """Exercise how household restrictions and air conditions change the ordered IDs."""
     context = parse(provider_data())
     profile = HouseholdProfile(
         city="delhi", budget_band="moderate", has_children=True, has_purifier=True
     )
 
     def eligible_ids():
+        """Read the ordered IDs again after each change to the profile or air context."""
         return [action.id for action in filter_eligible_actions(profile, context)]
 
     assert eligible_ids() == ["ACT001", "ACT003", "ACT015", "ACT007", "ACT004", "ACT002"]
@@ -104,6 +115,7 @@ def test_eligibility_combines_catalogue_conditions_and_user_needs():
 
 @pytest.mark.parametrize("data", [[], None, {}, {"current": []}])
 def test_malformed_provider_envelopes(data):
+    """Reject payloads without a usable current-data object."""
     with pytest.raises(ProviderError):
         parse(data)
 
@@ -112,11 +124,13 @@ def test_malformed_provider_envelopes(data):
     "start,end", [("99:00", "12:00"), ("09:60", "12:00"), ("17:00", "09:00"), ("09:00", "09:00")]
 )
 def test_invalid_routine_times(start, end):
+    """Enforce valid clock times and same-day end times after the start."""
     with pytest.raises(ValidationError):
         RoutineBlock(label="Work", start_time=start, end_time=end)
 
 
 def test_catalogue_is_closed_by_default():
+    """Require evidence on all enabled actions and keep unreviewed entries disabled."""
     sources = load_sources()
     enabled = [a for a in load_actions() if a.enabled]
     assert enabled
@@ -125,6 +139,7 @@ def test_catalogue_is_closed_by_default():
 
 
 def test_stale_or_foreign_scale_cannot_drive_current_classification():
+    """Treat stale values and index values from another scale as unknown."""
     context = parse(provider_data())
     context.is_stale = True
     assert classify_pollution_level(context) == "unknown"
@@ -134,6 +149,7 @@ def test_stale_or_foreign_scale_cannot_drive_current_classification():
 
 
 def test_model_cannot_invent_ids_or_extra_prose():
+    """Reject fabricated or repeated action IDs and extra model fields."""
     eligible = filter_eligible_actions(HouseholdProfile(city="delhi"), parse(provider_data()))
     with pytest.raises(ValueError):
         planner.validate_selection(planner.ActionSelection(action_ids=["INVENTED"]), eligible)
@@ -149,6 +165,7 @@ def test_model_cannot_invent_ids_or_extra_prose():
 
 @pytest.fixture
 def client(monkeypatch):
+    """Provide an isolated API client with fixture air data and no upstream AI calls."""
     monkeypatch.setattr(settings, "data_mode", "fixture")
     monkeypatch.setattr(settings, "gemini_api_key", "")
     monkeypatch.setattr(settings, "max_plan_requests_per_minute", 100)
@@ -159,6 +176,7 @@ def client(monkeypatch):
 
 
 def test_core_routes(client):
+    """Check core pages and endpoints along with unknown source and city errors."""
     for path in ("/", "/health", "/api/cities", "/api/sources", "/static/app.js"):
         assert client.get(path).status_code == 200
     assert client.get("/api/sources/FAKE").status_code == 404
@@ -166,6 +184,7 @@ def test_core_routes(client):
 
 
 def test_comparison_applies_constraints_and_keeps_exact_baseline(client):
+    """Verify that a what-if comparison preserves the stored original and fixed routines."""
     profile = HouseholdProfile(
         city="delhi",
         has_purifier=True,
@@ -204,6 +223,7 @@ def test_comparison_applies_constraints_and_keeps_exact_baseline(client):
 
 
 def test_comparison_rejects_unknown_snapshot_and_free_text(client):
+    """Require a known baseline and allowlisted changes to compare plans."""
     body = {
         "profile": {"city": "delhi"},
         "baseline_plan_id": "fake",
@@ -215,6 +235,7 @@ def test_comparison_rejects_unknown_snapshot_and_free_text(client):
 
 
 def test_rate_limit_enforced(client, monkeypatch):
+    """Reject traffic beyond the configured rolling limit and release active capacity."""
     monkeypatch.setattr(settings, "max_plan_requests_per_minute", 1)
     body = {"profile": {"city": "delhi"}}
     assert client.post("/api/plan", json=body).status_code == 200
@@ -223,8 +244,13 @@ def test_rate_limit_enforced(client, monkeypatch):
 
 
 def test_unavailable_provider_is_labelled(client, monkeypatch):
+    """Return an explicitly unavailable environmental context after a provider failure."""
+
     class Broken:
+        """Implement a provider that always fails without touching the network."""
+
         async def fetch(self, *args):
+            """Simulate a failed environmental data request."""
             raise ProviderError("upstream failure")
 
     monkeypatch.setattr(main, "get_provider", lambda *a: Broken())
@@ -237,9 +263,11 @@ def test_unavailable_provider_is_labelled(client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_invalid_ai_falls_back_without_leaking_error(monkeypatch):
+    """Confirm safe fallback without exposing the original upstream exception."""
     monkeypatch.setattr(settings, "gemini_api_key", "test-placeholder")
 
     async def broken(*args):
+        """Raise a private upstream message that must stay out of the response."""
         raise ValueError("sensitive-upstream-detail")
 
     monkeypatch.setattr(planner, "_select_with_gemini", broken)

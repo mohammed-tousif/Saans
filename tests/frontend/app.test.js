@@ -1,3 +1,4 @@
+// Cover pure browser utilities with Node so these assertions need no DOM or server.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { safeUrl } from '../../app/static/dom.js';

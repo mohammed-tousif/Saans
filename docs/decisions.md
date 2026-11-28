@@ -153,3 +153,12 @@ Next three tasks: review this candidate and the prepared form text with the user
 26 November (Codex): Keep one state owner per process, retain the existing admission and freshness boundaries, and use injected monotonic clocks in tests. Keep the broad AI fallback at the SDK and validation boundary.
 
 26 November (Codex): Preserve exact OpenAPI descriptions by excluding the new developer-only docstrings from previously undescribed route and schema definitions. Allow literal expected values in tests while enforcing named comparison values in application code.
+
+26 November (Codex): Release 821cdc3 passed exact-commit CI and Render checks. The submission kit uses verified changes and preserves the existing GenAI text and links. The user retains the last attempt.
+
+28 November (Codex): Explain named functions and non-obvious control flow, especially the boundaries between the browser, planning, provider and model code. Keep short callbacks readable in context. Preserve existing public API descriptions. Keep CSS custom-property values byte-for-byte while formatting declarations, since browsers expose the original value formatting.
+
+
+## 28 November 2026 — final documentation pass (Claude Code)
+- Comments explain decisions (why), not mechanics; no code-path changes in the final release before attempt 3.
+- Documentation-only status was proven by AST, CSSOM and OpenAPI comparison rather than by visual review.

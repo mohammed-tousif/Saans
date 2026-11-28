@@ -1,3 +1,5 @@
+"""Exercise request buffering against a simulated ASGI stream."""
+
 import pytest
 
 from app.security import RequestGuards
@@ -14,17 +16,21 @@ from app.security import RequestGuards
     ],
 )
 async def test_request_guard_handles_streamed_bodies(chunks, expected_body, expected_status):
+    """Replay valid chunked input once and reject input over the byte cap."""
     messages = iter([{"type": "http.request", **chunk} for chunk in chunks])
     received = []
     responses = []
 
     async def receive():
+        """Yield successive original request chunks."""
         return next(messages)
 
     async def send(message):
+        """Capture middleware response messages for assertions."""
         responses.append(message)
 
     async def app(scope, receive, send):
+        """Capture what the downstream app receives after buffering."""
         received.append(await receive())
 
     await RequestGuards(app, max_bytes=4)({"type": "http", "method": "POST"}, receive, send)

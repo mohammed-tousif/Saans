@@ -1,3 +1,4 @@
+// Share correctness rules across the application and the browser test harness.
 const correctnessRules = {
   eqeqeq: ['error', 'always', { null: 'ignore' }],
   'no-dupe-keys': 'error',
@@ -9,6 +10,7 @@ const correctnessRules = {
   'prefer-const': 'error',
 };
 
+// Declare browser names for static checks, including scripts evaluated inside a test page.
 const browserGlobals = {
   alert: 'readonly',
   console: 'readonly',

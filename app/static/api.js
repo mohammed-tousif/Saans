@@ -33,6 +33,7 @@ export async function requestJson(path, payload) {
         };
   const response = await fetch(path, options);
   if (!response.ok) {
+    // A proxy can return a non-JSON error page. Keep its status for recovery guidance.
     const error = await response.json().catch(() => ({}));
     throw new RequestError(response.status, error?.detail);
   }

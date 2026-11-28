@@ -32,7 +32,9 @@ from app.security import RequestGuards
 app = FastAPI(title="Saans", version="0.1.0")
 app.add_middleware(RequestGuards)
 STATIC_DIR = Path(__file__).parent / "static"
-# FastAPI treats a form feed as the end of the published operation description.
+# Route docstrings are written for maintainers, not API clients. FastAPI cuts an operation
+# description at a form feed, so passing only "\f" keeps them out of /openapi.json and leaves
+# the published schema unchanged.
 _END_OPENAPI_DESCRIPTION = "\f"
 planning_limiter = PlanningLimiter()
 snapshot_store = SnapshotStore()
@@ -44,6 +46,7 @@ async def environment(city: str) -> EnvironmentalContext:
     info = get_city(city)
     if not info:
         raise HTTPException(400, "Unsupported city")
+    # Fixture runs stay independent of the live cache. Fetch failures are returned uncached.
     cacheable = settings.data_mode == "live"
     cached = air_data_cache.get(info["label"]) if cacheable else None
     if cached is not None:
@@ -119,6 +122,7 @@ async def plan(request: PlanRequest) -> PlanResponse:
 
 
 async def _create_snapshot(profile: HouseholdProfile) -> PlanResponse:
+    """Admit, generate and save plans through one path shared by both planning routes."""
     async with planning_limiter.slot(
         settings.max_concurrent_gemini_calls, settings.max_plan_requests_per_minute
     ):
@@ -132,6 +136,7 @@ async def compare(request: CompareRequest) -> CompareResponse:
     snapshot = snapshot_store.get(request.baseline_plan_id)
     if not snapshot:
         raise HTTPException(409, "The previous plan expired. Create a new plan first.")
+    # The stored original is the baseline, even if the air provider now has newer data.
     original_profile, original = snapshot
     if profile_fingerprint(request.profile) != profile_fingerprint(original_profile):
         raise HTTPException(409, "Profile changed. Create a new plan first.")

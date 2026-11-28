@@ -1,3 +1,5 @@
+"""Exercise Gemini retry and fallback without making upstream requests."""
+
 import pytest
 from google.genai.errors import ClientError, ServerError
 
@@ -10,18 +12,21 @@ from app.schemas import HouseholdProfile
 @pytest.mark.asyncio
 @pytest.mark.parametrize("recover", [True, False])
 async def test_transient_failure_retries_once_and_preserves_truth(monkeypatch, caplog, recover):
+    """Test both backup success and fallback without exposing upstream error details."""
     monkeypatch.setattr(settings, "gemini_api_key", "test-placeholder")
     monkeypatch.setattr(settings, "gemini_model", "gemini-3.8-flash")
     monkeypatch.setattr(settings, "gemini_backup_model", "gemini-3.5-flash-lite")
     calls = []
 
     async def select(profile, context, eligible, model):
+        """Simulate primary failure and optionally return an eligible ID on retry."""
         calls.append(model)
         if recover and len(calls) == 2:
             return [eligible[0]]
         raise ServerError(503, {"error": {"message": "secret-upstream-detail"}})
 
     async def no_delay(seconds):
+        """Skip real backoff while exercising the retry path."""
         pass
 
     monkeypatch.setattr(planner, "_select_with_gemini", select)
@@ -42,9 +47,11 @@ async def test_transient_failure_retries_once_and_preserves_truth(monkeypatch, c
     "error", [ClientError(403, {}), ClientError(404, {}), ValueError("bad IDs")]
 )
 async def test_permanent_or_invalid_response_is_not_retried(monkeypatch, error):
+    """Check that retrying is reserved for transient failures."""
     calls = []
 
     async def broken(*args):
+        """Record attempts and raise the configured permanent failure."""
         calls.append(1)
         raise error
 
@@ -56,13 +63,16 @@ async def test_permanent_or_invalid_response_is_not_retried(monkeypatch, error):
 
 @pytest.mark.asyncio
 async def test_timeout_retries_only_once(monkeypatch):
+    """Check that repeated timeouts stop after two attempts."""
     calls = []
 
     async def broken(*args):
+        """Count calls and time out on every attempt."""
         calls.append(1)
         raise TimeoutError()
 
     async def no_delay(seconds):
+        """Remove the backoff wait from the timeout test."""
         pass
 
     monkeypatch.setattr(planner, "_select_with_gemini", broken)

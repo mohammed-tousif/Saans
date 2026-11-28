@@ -37,6 +37,7 @@ EUROPEAN_AQI_VERY_POOR_MAX = 100
 
 
 def _finite_number(value: object) -> float | None:
+    """Accept finite JSON numbers while excluding booleans and overflow."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
     try:
@@ -47,16 +48,19 @@ def _finite_number(value: object) -> float | None:
 
 
 def _nonnegative_number(value: object) -> float | None:
+    """Reject measurements and index values below zero."""
     number = _finite_number(value)
     return number if number is not None and number >= 0 else None
 
 
 def _coordinate(value: object, fallback: float, *, limit: int) -> float:
+    """Use the requested coordinate if the provider value is invalid or out of range."""
     number = _finite_number(value)
     return number if number is not None and abs(number) <= limit else fallback
 
 
 def _parse_observed_at(value: object, utc_offset: object) -> datetime | None:
+    """Convert the provider timestamp to UTC using its offset for local wall time."""
     if not isinstance(value, str) or not value:
         return None
     try:
@@ -74,6 +78,7 @@ def _parse_observed_at(value: object, utc_offset: object) -> datetime | None:
 
 
 def _is_stale(observed_at: datetime | None, retrieved_at: datetime) -> bool:
+    """Treat unknown, old or implausibly future timestamps as stale."""
     if observed_at is None:
         return True
     age = retrieved_at - observed_at
@@ -83,6 +88,7 @@ def _is_stale(observed_at: datetime | None, retrieved_at: datetime) -> bool:
 def _parse_pollutants(
     current: dict[str, object], units: dict[str, object]
 ) -> tuple[list[Pollutant], list[str]]:
+    """Keep valid readings and record quality flags for rejected fields."""
     pollutants = []
     flags = []
     for field, name in POLLUTANT_NAMES.items():
@@ -109,6 +115,7 @@ def _parse_pollutants(
 
 
 def _parse_index(current: dict[str, object], flags: list[str]) -> float | None:
+    """Parse European AQI separately so a bad index cannot discard pollutant readings."""
     value = current.get("european_aqi")
     index = _nonnegative_number(value)
     if value is not None and index is None:
@@ -117,7 +124,12 @@ def _parse_index(current: dict[str, object], flags: list[str]) -> float | None:
 
 
 class ProviderError(Exception):
-    """Raised when a data provider fails."""
+    """Signal that environmental data could not be fetched or parsed.
+
+    The message is for logs only. ``app.main.environment`` never shows it to users.
+    It returns an uncached record marked unavailable and stale, so the plan is labelled
+    instead of failing.
+    """
 
 
 class BaseProvider(abc.ABC):

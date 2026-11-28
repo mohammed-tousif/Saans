@@ -26,7 +26,7 @@
             <div class="header-status" id="header-status" aria-live="polite"></div>
         </header>
 
-        <!-- Navigation -->
+        <!-- Tab keys match the view IDs and are used by the keyboard navigation in app.js. -->
         <nav class="nav-landmark" aria-label="Main navigation">
         <div class="tab-nav" role="tablist" aria-label="Sections">
             <button class="tab active" role="tab" aria-selected="true" aria-controls="view-setup" data-tab="setup" id="tab-setup">
@@ -90,7 +90,7 @@
                         </div>
                     </fieldset>
 
-                    <!-- Routine Blocks -->
+                    <!-- profile.js inserts editable commitment rows into the container below. -->
                     <fieldset class="form-group">
                         <legend class="form-legend"><span class="step-number">02</span> What stays on your calendar</legend>
                         <p class="form-help">Add time blocks that cannot move (school, work, etc.)</p>
@@ -219,7 +219,7 @@
             <!-- TODAY VIEW -->
             <section class="view" id="view-today" role="tabpanel" aria-labelledby="tab-today" hidden>
                 <div class="view-header compact"><p class="eyebrow">YOUR DAY, CONSIDERED</p><h2>A plan with<br>room for real life.</h2><p>Practical choices, with the reasons behind them.</p></div>
-                <!-- Air Quality Context -->
+                <!-- views.js fills this region from the same environmental record used by the plan. -->
                     <div class="air-loading initially-hidden" id="air-loading" role="status">
                         <span class="spinner"></span>
                         <span>Loading environmental data...</span>
@@ -231,7 +231,7 @@
                     <!-- Context Summary -->
                     <div class="context-summary" id="plan-summary"></div>
 
-                    <!-- Generation Mode Badge -->
+                    <!-- Identify whether the model selected the actions or rules supplied the fallback. -->
                     <div class="mode-badge" id="mode-badge"></div>
 
                     <!-- Actions -->
@@ -300,7 +300,7 @@
             </section>
         </main>
 
-        <!-- Compare Modal -->
+        <!-- Keep the revised plan in this dialog until the user accepts it. -->
         <dialog id="compare-modal" class="compare-modal" aria-labelledby="compare-title">
             <div class="modal-content">
                 <div class="modal-header">

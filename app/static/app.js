@@ -20,13 +20,14 @@ import {
   updateHeaderStatus,
 } from './views.js';
 
+// Keep the accepted plan paired with its submitted profile. The form can change separately.
 const state = {
   profile: null,
   currentPlan: null,
   pendingComparison: null,
   sources: Object.create(null),
   isGenerating: false,
-  revision: 0,
+  revision: 0, // A response is current only if this edit counter still matches.
 };
 
 document.addEventListener(
@@ -90,6 +91,7 @@ function loadSampleProfile(name) {
 const ACTIONS = {
   sample: (el) => loadSampleProfile(el.dataset.profile),
   'add-routine': () => addRoutineBlock(),
+  // Removing a row does not fire an input event, so advance the edit counter here.
   'remove-routine': (el) => {
     el.closest('.routine-block')?.remove();
     state.revision++;
@@ -122,7 +124,7 @@ function handleAction(event) {
 function setupEventListeners() {
   document.addEventListener('click', handleAction);
 
-  // Tab navigation
+  // A selected tab and its panel share the same data-tab and ID suffix.
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
@@ -131,13 +133,13 @@ function setupEventListeners() {
     state.revision++;
   });
 
-  // Form submission
+  // Keep the form on this page while its asynchronous request runs.
   document.getElementById('setup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     await createPlan();
   });
 
-  // Keyboard navigation for tabs
+  // Arrow keys wrap at the tab list edges. Home and End jump to the endpoints.
   document.querySelector('.tab-nav').addEventListener(
     'keydown',
     /**
@@ -188,7 +190,7 @@ async function updateSampleBannerForMode() {
  * @returns {void}
  */
 function switchTab(tabName, focus = false) {
-  // Update tab buttons
+  // Keep only the selected tab in the normal Tab key sequence.
   document.querySelectorAll('.tab').forEach((t) => {
     const isActive = t.dataset.tab === tabName;
     t.classList.toggle('active', isActive);
@@ -196,7 +198,7 @@ function switchTab(tabName, focus = false) {
     t.tabIndex = isActive ? 0 : -1;
   });
 
-  // Update views
+  // Hide inactive panels so their contents are out of the reading and focus order.
   document.querySelectorAll('.view').forEach((v) => {
     const isActive = v.id === `view-${tabName}`;
     v.classList.toggle('active', isActive);
@@ -272,6 +274,7 @@ async function createPlan() {
   setPlanLoading(true);
   try {
     const plan = await requestJson('/api/plan', { profile });
+    // The user can edit the form while the server is generating a plan.
     if (revision !== state.revision) {
       showError('Your setup changed. Create a new plan for the updated inputs.');
       return;
@@ -312,6 +315,7 @@ async function changeConstraint(change) {
   modal.showModal();
 
   try {
+    // Compare the accepted inputs against their original server snapshot.
     const comparison = await requestJson('/api/compare', {
       profile: state.profile,
       changed_constraints: [change],
@@ -354,6 +358,7 @@ function acceptRevisedPlan() {
  */
 function showSource(sourceId) {
   switchTab('sources');
+  // Focus the evidence card after revealing its tab, then remove the visual highlight.
   setTimeout(() => {
     const el = document.getElementById(`source-${sourceId}`);
     if (el) {
